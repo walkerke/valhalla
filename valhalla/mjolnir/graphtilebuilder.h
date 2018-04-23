@@ -86,6 +86,13 @@ class GraphTileBuilder : public baldr::GraphTile {
   std::vector<DirectedEdge>& directededges();
 
   /**
+   * Gets the current list of node transitions (builders).
+   * @return  Returns the node transition builders.
+   */
+  std::vector<DirectedEdge>& transitions();
+
+
+  /**
    * Add a transit departure.
    * @param  departure  Transit departure record.
    */
@@ -437,6 +444,10 @@ class GraphTileBuilder : public baldr::GraphTile {
   // List of directed edges. This is a fixed size structure so it can be
   // indexed directly.
   std::vector<DirectedEdge> directededges_builder_;
+
+  // List of node transitions. This is a fixed size structure so it can be
+  // indexed directly.
+  std::vector<DirectedEdge> transitions_builder_;
 
   // List of transit departures. Sorted by directed edge Id and
   // departure time

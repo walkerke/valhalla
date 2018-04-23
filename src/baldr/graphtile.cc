@@ -44,6 +44,7 @@ GraphTile::GraphTile()
     : header_(nullptr),
       nodes_(nullptr),
       directededges_(nullptr),
+      transitions_(nullptr),
       departures_(nullptr),
       transit_stops_(nullptr),
       transit_routes_(nullptr),
@@ -160,6 +161,10 @@ void GraphTile::Initialize(const GraphId& graphid, char* tile_ptr,
   // Set a pointer to the directed edge list
   directededges_ = reinterpret_cast<DirectedEdge*>(ptr);
   ptr += header_->directededgecount() * sizeof(DirectedEdge);
+
+  // Set a pointer to the node transition list
+  transitions_ = reinterpret_cast<NodeTransition*>(ptr);
+  ptr += header_->transitioncount() * sizeof(NodeTransition);
 
   // Set a pointer access restriction list
   access_restrictions_ = reinterpret_cast<AccessRestriction*>(ptr);
@@ -436,6 +441,24 @@ iterable_t<const DirectedEdge> GraphTile::GetDirectedEdges(const size_t idx) con
     const auto& nodeinfo = nodes_[idx];
     const auto* edge = directededge(nodeinfo.edge_index());
     return iterable_t<const DirectedEdge>{edge, nodeinfo.edge_count()};
+  }
+  throw std::runtime_error("GraphTile NodeInfo index out of bounds: " +
+                           std::to_string(header_->graphid().tileid()) + "," +
+                           std::to_string(header_->graphid().level()) + "," +
+                           std::to_string(idx)  + " nodecount= " +
+                           std::to_string(header_->nodecount()));
+}
+
+/**
+ * Get an iterable set of node transitions from a node in this tile.
+ * @param  idx  Index of the node within the current tile.
+ * @return returns an iterable collection of NodeTransitions.
+ */
+iterable_t<const NodeTransition> GraphTile::GetTransitions(const size_t idx) const {
+  if (idx < header_->nodecount()) {
+    const auto& nodeinfo = nodes_[idx];
+    const auto* trans = transition(nodeinfo.transition_index());
+    return iterable_t<const NodeTransition>{trans, nodeinfo.transition_count()};
   }
   throw std::runtime_error("GraphTile NodeInfo index out of bounds: " +
                            std::to_string(header_->graphid().tileid()) + "," +

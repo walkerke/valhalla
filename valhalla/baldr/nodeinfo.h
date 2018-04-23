@@ -323,6 +323,38 @@ class NodeInfo {
   void set_heading(uint32_t localidx, uint32_t heading);
 
   /**
+   * Return the index of the first transition from this node.
+   * @return  Returns the transition index.
+   */
+  uint32_t transition_index() const {
+    return transition_index_;
+  }
+
+  /**
+   * Return the index of the first transition from this node.
+   * @return  Returns the transition index.
+   */
+  void set_transition_index(const uint32_t index) {
+    transition_index_ = index;
+  }
+
+  /**
+   * Return the number of transitions from this node.
+   * @return  Returns the transition count.
+   */
+  uint32_t transition_count() const {
+    return transition_count_;
+  }
+
+  /**
+   * Return the number of transitions from this node.
+   * @return  Returns the transition count.
+   */
+  void set_transition_count(const uint32_t count) {
+    transition_count_ = count;
+  }
+
+  /**
    * Returns the json representation of the object
    * @param tile the tile required to get admin information
    * @return  json object
@@ -370,6 +402,12 @@ class NodeInfo {
     uint64_t headings_;
   };
   WayHeading way_heading_;
+
+  // Transitions between nodes
+  uint32_t transition_index_ : 21; // Index into the node transitions to the
+                                   // first transition
+  uint32_t transition_count_ : 3;  // Number of transitions from this node
+  uint32_t spare2_           : 8;
 };
 
 }

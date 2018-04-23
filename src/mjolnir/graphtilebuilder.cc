@@ -56,6 +56,9 @@ GraphTileBuilder::GraphTileBuilder(const std::string& tile_dir,
   n = header_->directededgecount();
   directededges_builder_.resize(n);
   memcpy(&directededges_builder_[0], directededges_, n * sizeof(DirectedEdge));
+  n = header_->transitioncount();
+  transitions_builder_.resize(n);
+  memcpy(&transitions_builder_[0], transitions_, n * sizeof(NodeTransition));
 
   // Create access restriction list
   for (uint32_t i = 0; i < header_->access_restriction_count(); i++) {
@@ -255,6 +258,11 @@ void GraphTileBuilder::StoreTileData() {
     in_mem.write(reinterpret_cast<const char*>(directededges_builder_.data()),
                directededges_builder_.size() * sizeof(DirectedEdge));
 
+    // Write the node transitions
+    header_builder_.set_transitioncount(transitions_builder_.size());
+    in_mem.write(reinterpret_cast<const char*>(transitions_builder_.data()),
+               transitions_builder_.size() * sizeof(NodeTransition));
+
     // Sort and write the access restrictions
     header_builder_.set_access_restriction_count(access_restriction_builder_.size());
     std::sort(access_restriction_builder_.begin(), access_restriction_builder_.end());
@@ -302,6 +310,7 @@ void GraphTileBuilder::StoreTileData() {
          (sizeof(GraphTileHeader))
              + (nodes_builder_.size() * sizeof(NodeInfo))
              + (directededges_builder_.size() * sizeof(DirectedEdge))
+             + (transitions_builder_.size() * sizeof(NodeTransition))
              + (access_restriction_builder_.size() * sizeof(AccessRestriction))
              + (departure_builder_.size() * sizeof(TransitDeparture))
              + (stop_builder_.size() * sizeof(TransitStop))
@@ -449,6 +458,11 @@ std::vector<NodeInfo>& GraphTileBuilder::nodes() {
 // Gets the current list of directed edge (builders).
 std::vector<DirectedEdge>& GraphTileBuilder::directededges() {
   return directededges_builder_;
+}
+
+// Gets the current list of directed edge (builders).
+std::vector<NodeTransition>& GraphTileBuilder::transitions() {
+  return transitiones_builder_;
 }
 
 // Add a transit departure.

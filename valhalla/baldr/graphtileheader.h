@@ -176,6 +176,20 @@ class GraphTileHeader {
   void set_directededgecount(const uint32_t count);
 
   /**
+   * Gets the number of directed edges in this tile.
+   * @return  Returns the number of directed edges.
+   */
+  uint32_t transitioncount() const {
+    return transitioncount_;
+  }
+
+  /**
+   * Sets the number of node transitions in this tile.
+   * @param  count  Number of directed edges within the tile.
+   */
+  void set_transitioncount(const uint32_t count);
+
+  /**
    * Gets the number of signs in this tile.
    * @return  Returns the number of signs.
    */
@@ -506,6 +520,7 @@ class GraphTileHeader {
   // Record counts (for fixed size records)
   uint32_t nodecount_;                  // Number of nodes
   uint32_t directededgecount_;          // Number of directed edges
+  uint32_t transitioncount_;            // Number of node transitions
   uint32_t signcount_;                  // Number of signs
   uint32_t access_restriction_count_;   // Number of access restriction records
   uint32_t admincount_;                 // Number of admin records

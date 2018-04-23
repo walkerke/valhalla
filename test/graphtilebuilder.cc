@@ -50,6 +50,7 @@ bool tile_equalish(const GraphTile a, const GraphTile b, size_t difference, cons
      ah->density() == bh->density() &&
      ah->departurecount() == bh->departurecount() &&
      ah->directededgecount() == bh->directededgecount() &&
+     ah->transitioncount() == bh->transitioncount() &&
      ah->edgeinfo_offset() + difference == bh->edgeinfo_offset() &&
      ah->exit_quality() == bh->exit_quality() &&
      ah->graphid() == bh->graphid() &&

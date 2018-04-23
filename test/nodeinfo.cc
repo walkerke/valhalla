@@ -8,7 +8,7 @@ using namespace valhalla::baldr;
 using namespace valhalla::midgard;
 
 // Expected size is 32 bytes.
-constexpr size_t kNodeInfoExpectedSize = 32;
+constexpr size_t kNodeInfoExpectedSize = 40;
 
 namespace {
 

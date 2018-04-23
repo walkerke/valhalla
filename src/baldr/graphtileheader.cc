@@ -70,6 +70,11 @@ void GraphTileHeader::set_directededgecount(const uint32_t count) {
   directededgecount_ = count;
 }
 
+// Sets the number of directed edges in this tile.
+void GraphTileHeader::set_transitioncount(const uint32_t count) {
+  transitioncount_ = count;
+}
+
 // Sets the sign count.
 void GraphTileHeader::set_signcount(const uint32_t count) {
   signcount_ = count;

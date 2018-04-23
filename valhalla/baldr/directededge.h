@@ -26,7 +26,7 @@ class DirectedEdge {
    */
   GraphId endnode() const {
     return GraphId(endnode_);
-  };
+  }
 
   /**
    * Set the end node of this directed edge.

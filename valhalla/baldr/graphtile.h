@@ -2,6 +2,9 @@
 #define VALHALLA_BALDR_GRAPHTILE_H_
 
 #include <cstdint>
+#include <memory>
+#include <valhalla/midgard/util.h>
+#include <valhalla/midgard/aabb2.h>
 #include <valhalla/baldr/accessrestriction.h>
 #include <valhalla/baldr/graphid.h>
 #include <valhalla/baldr/graphtileheader.h>
@@ -16,15 +19,11 @@
 #include <valhalla/baldr/transitstop.h>
 #include <valhalla/baldr/transitschedule.h>
 #include <valhalla/baldr/transittransfer.h>
+#include <valhalla/baldr/nodetransition.h>
 #include <valhalla/baldr/sign.h>
 #include <valhalla/baldr/edgeinfo.h>
 #include <valhalla/baldr/admininfo.h>
 #include <valhalla/baldr/curler.h>
-
-#include <valhalla/midgard/util.h>
-#include <valhalla/midgard/aabb2.h>
-
-#include <memory>
 #include <valhalla/baldr/signinfo.h>
 
 namespace valhalla {
@@ -193,6 +192,28 @@ class GraphTile {
     return { endnode.tileid(), endnode.level(),
              node(endnode.id())->edge_index() + edge->opp_index() };
   }
+
+  /**
+   * Get a pointer to a edge.
+   * @param  idx  Index of the directed edge within the current tile.
+   * @return  Returns a pointer to the edge.
+   */
+  const NodeTransition* transition(const size_t idx) const {
+    if (idx < header_->transitioncount())
+      return &transitions_[idx];
+    throw std::runtime_error("GraphTile NodeTransition index out of bounds: " +
+                             std::to_string(header_->graphid().tileid()) + "," +
+                             std::to_string(header_->graphid().level()) + "," +
+                             std::to_string(idx)  + " transitioncount= " +
+                             std::to_string(header_->transitioncount()));
+  }
+
+  /**
+   * Get an iterable set of node transitions from a node in this tile.
+   * @param  idx  Index of the node within the current tile.
+   * @return returns an iterable collection of NodeTransitions.
+   */
+  iterable_t<const NodeTransition> GetTransitions(const size_t idx) const;
 
   /**
    * Get a pointer to edge info.
@@ -432,6 +453,12 @@ class GraphTile {
   // indexed directly.
   DirectedEdge* directededges_;
 
+  // List of transitions between nodes on different levels
+  NodeTransition* transitions_;
+
+  // Access restrictions, 1 or more per edge id
+  AccessRestriction* access_restrictions_;
+
   // Transit departures, many per index (indexed by directed edge index and
   // sorted by departure time)
   TransitDeparture* departures_;
@@ -447,9 +474,6 @@ class GraphTile {
 
   // Transit transfer records.
   TransitTransfer* transit_transfers_;
-
-  // Access restrictions, 1 or more per edge id
-  AccessRestriction* access_restrictions_;
 
   // Signs (indexed by directed edge index)
   Sign* signs_;
