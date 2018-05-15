@@ -156,8 +156,7 @@ GraphId GetOpposingEdge(const GraphId& node, const DirectedEdge* edge,
   const DirectedEdge* directededge = tile->directededge(nodeinfo->edge_index());
   for (uint32_t i = 0, n = nodeinfo->edge_count(); i < n;
                 i++, directededge++, ++edgeid) {
-    if (directededge->IsTransition() ||
-        directededge->use() == Use::kTransitConnection ||
+    if (directededge->use() == Use::kTransitConnection ||
         directededge->use() == Use::kEgressConnection ||
         directededge->use() == Use::kPlatformConnection) {
       continue;
@@ -398,8 +397,7 @@ uint32_t AddShortcutEdges(GraphReader& reader, const GraphTile* tile,
   for (uint32_t i = 0; i < edge_count; i++, ++edge_id) {
     // Skip transition edges and transit connections.
     const DirectedEdge* directededge = tile->directededge(edge_id);
-    if (directededge->IsTransition() ||
-        directededge->use() == Use::kTransitConnection ||
+    if (directededge->use() == Use::kTransitConnection ||
         directededge->use() == Use::kEgressConnection ||
         directededge->use() == Use::kPlatformConnection) {
       continue;
@@ -599,59 +597,55 @@ uint32_t FormShortcuts(GraphReader& reader,
         const DirectedEdge* directededge = tile->directededge(edgeid);
         DirectedEdge newedge = *directededge;
 
-        // Transition edges are stored as is (no need for EdgeInfo, signs,
-        // or restrictions).
-        if (!directededge->trans_down() && !directededge->trans_up()) {
-          // Get signs from the base directed edge
-          if (directededge->exitsign()) {
-            std::vector<SignInfo> signs = tile->GetSigns(edgeid.id());
-            if (signs.size() == 0) {
-              LOG_ERROR("Base edge should have signs, but none found");
-            }
-            tilebuilder.AddSigns(tilebuilder.directededges().size(), signs);
+        // Get signs from the base directed edge
+        if (directededge->exitsign()) {
+          std::vector<SignInfo> signs = tile->GetSigns(edgeid.id());
+          if (signs.size() == 0) {
+            LOG_ERROR("Base edge should have signs, but none found");
           }
-
-          // Get access restrictions from the base directed edge. Add these to
-          // the list of access restrictions in the new tile. Update the
-          // edge index in the restriction to be the current directed edge Id
-          if (directededge->access_restriction()) {
-            auto restrictions = tile->GetAccessRestrictions(edgeid.id(), kAllAccess);
-            for (const auto& res : restrictions) {
-              tilebuilder.AddAccessRestriction(
-                  AccessRestriction(tilebuilder.directededges().size(),
-                     res.type(), res.modes(), res.value()));
-            }
-          }
-
-          // Copy lane connectivity
-          if (directededge->laneconnectivity()) {
-            auto laneconnectivity = tile->GetLaneConnectivity(edgeid.id());
-            if (laneconnectivity.size() == 0) {
-              LOG_ERROR("Base edge should have lane connectivity, but none found");
-            }
-            for (auto& lc : laneconnectivity) {
-              lc.set_to(tilebuilder.directededges().size());
-            }
-            tilebuilder.AddLaneConnectivity(laneconnectivity);
-          }
-
-          // Get edge info, shape, and names from the old tile and add
-          // to the new. Use prior edgeinfo offset as the key to make sure
-          // edges that have the same end nodes are differentiated (this
-          // should be a valid key since tile sizes aren't changed)
-          auto edgeinfo = tile->edgeinfo(directededge->edgeinfo_offset());
-          uint32_t edge_info_offset = tilebuilder.AddEdgeInfo(directededge->edgeinfo_offset(),
-                         node_id, directededge->endnode(), edgeinfo.wayid(), edgeinfo.encoded_shape(),
-                         tile->GetNames(directededge->edgeinfo_offset()),
-                         tile->GetTypes(directededge->edgeinfo_offset()), added);
-          newedge.set_edgeinfo_offset(edge_info_offset);
-
-          // Set the superseded mask - this is the shortcut mask that
-          // supersedes this edge (outbound from the node)
-          auto s = shortcuts.find(i);
-          uint32_t supersed_idx = (s != shortcuts.end()) ? s->second : 0;
-          newedge.set_superseded(supersed_idx);
+          tilebuilder.AddSigns(tilebuilder.directededges().size(), signs);
         }
+
+        // Get access restrictions from the base directed edge. Add these to
+        // the list of access restrictions in the new tile. Update the
+        // edge index in the restriction to be the current directed edge Id
+        if (directededge->access_restriction()) {
+          auto restrictions = tile->GetAccessRestrictions(edgeid.id(), kAllAccess);
+          for (const auto& res : restrictions) {
+            tilebuilder.AddAccessRestriction(
+                AccessRestriction(tilebuilder.directededges().size(),
+                   res.type(), res.modes(), res.value()));
+          }
+        }
+
+        // Copy lane connectivity
+        if (directededge->laneconnectivity()) {
+          auto laneconnectivity = tile->GetLaneConnectivity(edgeid.id());
+          if (laneconnectivity.size() == 0) {
+            LOG_ERROR("Base edge should have lane connectivity, but none found");
+          }
+          for (auto& lc : laneconnectivity) {
+            lc.set_to(tilebuilder.directededges().size());
+          }
+          tilebuilder.AddLaneConnectivity(laneconnectivity);
+        }
+
+        // Get edge info, shape, and names from the old tile and add
+        // to the new. Use prior edgeinfo offset as the key to make sure
+        // edges that have the same end nodes are differentiated (this
+        // should be a valid key since tile sizes aren't changed)
+        auto edgeinfo = tile->edgeinfo(directededge->edgeinfo_offset());
+        uint32_t edge_info_offset = tilebuilder.AddEdgeInfo(directededge->edgeinfo_offset(),
+                       node_id, directededge->endnode(), edgeinfo.wayid(), edgeinfo.encoded_shape(),
+                       tile->GetNames(directededge->edgeinfo_offset()),
+                       tile->GetTypes(directededge->edgeinfo_offset()), added);
+        newedge.set_edgeinfo_offset(edge_info_offset);
+
+        // Set the superseded mask - this is the shortcut mask that
+        // supersedes this edge (outbound from the node)
+        auto s = shortcuts.find(i);
+        uint32_t supersed_idx = (s != shortcuts.end()) ? s->second : 0;
+        newedge.set_superseded(supersed_idx);
 
         // Add directed edge
         tilebuilder.directededges().emplace_back(std::move(newedge));
@@ -665,6 +659,12 @@ uint32_t FormShortcuts(GraphReader& reader,
             tilebuilder.edge_elevations().emplace_back(std::move(*elev));
           }
         }
+      }
+
+      // Add existing transitions
+      for (uint32_t i = 0; i < nodeinfo.transition_count(); ++i) {
+        tilebuilder.transitions().emplace_back(std::move(
+            *(tile->transition(nodeinfo.transition_index() + i))));
       }
 
       // Set the edge count for the new node

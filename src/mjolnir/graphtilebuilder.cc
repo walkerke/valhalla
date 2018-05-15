@@ -51,14 +51,17 @@ GraphTileBuilder::GraphTileBuilder(const std::string& tile_dir,
 
   // Create vectors of the fixed size objects
   size_t n = header_->nodecount();
-  nodes_builder_.resize(n);
-  memcpy(&nodes_builder_[0], nodes_, n * sizeof(NodeInfo));
+  nodes_builder_.reserve(n);
+  std::copy(nodes_, nodes_ + n, std::back_inserter(nodes_builder_));
+
   n = header_->directededgecount();
-  directededges_builder_.resize(n);
-  memcpy(&directededges_builder_[0], directededges_, n * sizeof(DirectedEdge));
+  directededges_builder_.reserve(n);
+  std::copy(directededges_, directededges_ + n, std::back_inserter(directededges_builder_));
+
+  // Node transitions
   n = header_->transitioncount();
-  transitions_builder_.resize(n);
-  memcpy(&transitions_builder_[0], transitions_, n * sizeof(NodeTransition));
+  transitions_builder_.reserve(n);
+  std::copy(transitions_, transitions_ + n, std::back_inserter(transitions_builder_));
 
   // Create access restriction list
   for (uint32_t i = 0; i < header_->access_restriction_count(); i++) {
@@ -261,7 +264,7 @@ void GraphTileBuilder::StoreTileData() {
     // Write the node transitions
     header_builder_.set_transitioncount(transitions_builder_.size());
     in_mem.write(reinterpret_cast<const char*>(transitions_builder_.data()),
-               transitions_builder_.size() * sizeof(NodeTransition));
+                transitions_builder_.size() * sizeof(NodeTransition));
 
     // Sort and write the access restrictions
     header_builder_.set_access_restriction_count(access_restriction_builder_.size());
@@ -436,7 +439,7 @@ void GraphTileBuilder::Update(const std::vector<NodeInfo>& nodes,
                directededges.size() * sizeof(DirectedEdge));
 
     // Write the rest of the tiles
-    auto begin = reinterpret_cast<const char*>(&access_restrictions_[0]);
+    auto begin = reinterpret_cast<const char*>(&transitions_[0]);
     auto end = reinterpret_cast<const char*>(header()) + header()->end_offset();
     file.write(begin, end - begin);
     file.close();
@@ -458,11 +461,6 @@ std::vector<NodeInfo>& GraphTileBuilder::nodes() {
 // Gets the current list of directed edge (builders).
 std::vector<DirectedEdge>& GraphTileBuilder::directededges() {
   return directededges_builder_;
-}
-
-// Gets the current list of directed edge (builders).
-std::vector<NodeTransition>& GraphTileBuilder::transitions() {
-  return transitiones_builder_;
 }
 
 // Add a transit departure.

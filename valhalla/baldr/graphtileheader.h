@@ -176,8 +176,8 @@ class GraphTileHeader {
   void set_directededgecount(const uint32_t count);
 
   /**
-   * Gets the number of directed edges in this tile.
-   * @return  Returns the number of directed edges.
+   * Gets the number of node transitions in this tile.
+   * @return  Returns the number of node transitions.
    */
   uint32_t transitioncount() const {
     return transitioncount_;
@@ -185,7 +185,7 @@ class GraphTileHeader {
 
   /**
    * Sets the number of node transitions in this tile.
-   * @param  count  Number of directed edges within the tile.
+   * @param  count  Number of node transitions within the tile.
    */
   void set_transitioncount(const uint32_t count);
 
@@ -495,11 +495,12 @@ class GraphTileHeader {
   uint64_t dataset_id_;
 
   // Quality metrics. These are 4 bit (0-15) relative quality indicators.
-  uint64_t density_       : 4;
-  uint64_t name_quality_  : 4;
-  uint64_t speed_quality_ : 4;
-  uint64_t exit_quality_  : 4;
-  uint64_t spare1_        : 48;
+  uint64_t density_         : 4;
+  uint64_t name_quality_    : 4;
+  uint64_t speed_quality_   : 4;
+  uint64_t exit_quality_    : 4;
+  uint64_t spare1_          : 24;
+  uint64_t transitioncount_ : 24; // Number of node transitions
 
   // Number of transit records
   uint64_t departurecount_ : 24;
@@ -520,7 +521,6 @@ class GraphTileHeader {
   // Record counts (for fixed size records)
   uint32_t nodecount_;                  // Number of nodes
   uint32_t directededgecount_;          // Number of directed edges
-  uint32_t transitioncount_;            // Number of node transitions
   uint32_t signcount_;                  // Number of signs
   uint32_t access_restriction_count_;   // Number of access restriction records
   uint32_t admincount_;                 // Number of admin records

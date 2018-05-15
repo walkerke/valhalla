@@ -626,6 +626,7 @@ check_PROGRAMS = \
 	test/tilehierarchy \
 	test/graphtile \
 	test/nodeinfo \
+	test/nodetransition \
 	test/turn \
 	test/graphreader \
 	test/streetname \
@@ -749,6 +750,9 @@ test_graphtile_LDADD = $(DEPS_LIBS) $(SERVICE_DEPS_LIBS) $(BOOST_LIBS) libvalhal
 test_nodeinfo_SOURCES = test/nodeinfo.cc test/test.cc
 test_nodeinfo_CPPFLAGS = $(DEPS_CFLAGS) $(SERVICE_DEPS_CFLAGS)
 test_nodeinfo_LDADD = $(DEPS_LIBS) $(SERVICE_DEPS_LIBS) $(BOOST_LIBS) libvalhalla.la
+test_nodetransition_SOURCES = test/nodeinfo.cc test/test.cc
+test_nodetransition_CPPFLAGS = $(DEPS_CFLAGS) $(SERVICE_DEPS_CFLAGS)
+test_nodetransition_LDADD = $(DEPS_LIBS) $(SERVICE_DEPS_LIBS) $(BOOST_LIBS) libvalhalla.la
 test_turn_SOURCES = test/turn.cc test/test.cc
 test_turn_CPPFLAGS = $(DEPS_CFLAGS) $(SERVICE_DEPS_CFLAGS)
 test_turn_LDADD = $(DEPS_LIBS) $(SERVICE_DEPS_LIBS) $(BOOST_LIBS) libvalhalla.la

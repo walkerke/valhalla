@@ -45,12 +45,12 @@ GraphTile::GraphTile()
       nodes_(nullptr),
       directededges_(nullptr),
       transitions_(nullptr),
+      access_restrictions_(nullptr),
       departures_(nullptr),
       transit_stops_(nullptr),
       transit_routes_(nullptr),
       transit_schedules_(nullptr),
       transit_transfers_(nullptr),
-      access_restrictions_(nullptr),
       signs_(nullptr),
       admins_(nullptr),
       edge_bins_(nullptr),
@@ -234,7 +234,8 @@ void GraphTile::Initialize(const GraphId& graphid, char* tile_ptr,
 
   // Start of edge elevation data. If the tile has edge elevation data (query
   // the header) then the count is the same as the directed edge count.
-  edge_elevation_ = reinterpret_cast<EdgeElevation*>(tile_ptr + header_->edge_elevation_offset());
+  ptr = tile_ptr + header_->edge_elevation_offset();
+  edge_elevation_ = reinterpret_cast<EdgeElevation*>(ptr);
 
   // For reference - how to use the end offset to set size of an object (that
   // is not fixed size and count).
@@ -441,24 +442,6 @@ iterable_t<const DirectedEdge> GraphTile::GetDirectedEdges(const size_t idx) con
     const auto& nodeinfo = nodes_[idx];
     const auto* edge = directededge(nodeinfo.edge_index());
     return iterable_t<const DirectedEdge>{edge, nodeinfo.edge_count()};
-  }
-  throw std::runtime_error("GraphTile NodeInfo index out of bounds: " +
-                           std::to_string(header_->graphid().tileid()) + "," +
-                           std::to_string(header_->graphid().level()) + "," +
-                           std::to_string(idx)  + " nodecount= " +
-                           std::to_string(header_->nodecount()));
-}
-
-/**
- * Get an iterable set of node transitions from a node in this tile.
- * @param  idx  Index of the node within the current tile.
- * @return returns an iterable collection of NodeTransitions.
- */
-iterable_t<const NodeTransition> GraphTile::GetTransitions(const size_t idx) const {
-  if (idx < header_->nodecount()) {
-    const auto& nodeinfo = nodes_[idx];
-    const auto* trans = transition(nodeinfo.transition_index());
-    return iterable_t<const NodeTransition>{trans, nodeinfo.transition_count()};
   }
   throw std::runtime_error("GraphTile NodeInfo index out of bounds: " +
                            std::to_string(header_->graphid().tileid()) + "," +

@@ -194,28 +194,6 @@ class GraphTile {
   }
 
   /**
-   * Get a pointer to a edge.
-   * @param  idx  Index of the directed edge within the current tile.
-   * @return  Returns a pointer to the edge.
-   */
-  const NodeTransition* transition(const size_t idx) const {
-    if (idx < header_->transitioncount())
-      return &transitions_[idx];
-    throw std::runtime_error("GraphTile NodeTransition index out of bounds: " +
-                             std::to_string(header_->graphid().tileid()) + "," +
-                             std::to_string(header_->graphid().level()) + "," +
-                             std::to_string(idx)  + " transitioncount= " +
-                             std::to_string(header_->transitioncount()));
-  }
-
-  /**
-   * Get an iterable set of node transitions from a node in this tile.
-   * @param  idx  Index of the node within the current tile.
-   * @return returns an iterable collection of NodeTransitions.
-   */
-  iterable_t<const NodeTransition> GetTransitions(const size_t idx) const;
-
-  /**
    * Get a pointer to edge info.
    * @return  Returns edge info.
    */
@@ -437,6 +415,21 @@ class GraphTile {
     }
   }
 
+  /**
+   * Get a pointer to a node transition.
+   * @param  idx  Index of the directed edge within the current tile.
+   * @return  Returns a pointer to the edge.
+   */
+  const NodeTransition* transition(const size_t idx) const {
+    if (idx < header_->transitioncount())
+      return &transitions_[idx];
+    throw std::runtime_error("GraphTile NodeTransition index out of bounds: " +
+                             std::to_string(header_->graphid().tileid()) + "," +
+                             std::to_string(header_->graphid().level()) + "," +
+                             std::to_string(idx)  + " transitioncount= " +
+                             std::to_string(header_->transitioncount()));
+  }
+
  protected:
 
   // Graph tile memory, this must be shared so that we can put it into cache
@@ -453,7 +446,7 @@ class GraphTile {
   // indexed directly.
   DirectedEdge* directededges_;
 
-  // List of transitions between nodes on different levels
+  // List of transitions between nodes on different levels.
   NodeTransition* transitions_;
 
   // Access restrictions, 1 or more per edge id

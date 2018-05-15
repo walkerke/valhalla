@@ -18,6 +18,7 @@
 #include <valhalla/baldr/graphtile.h>
 #include <valhalla/baldr/graphtileheader.h>
 #include <valhalla/baldr/admin.h>
+#include <valhalla/baldr/nodetransition.h>
 #include <valhalla/baldr/sign.h>
 #include <valhalla/baldr/signinfo.h>
 #include <valhalla/baldr/transitdeparture.h>
@@ -84,13 +85,6 @@ class GraphTileBuilder : public baldr::GraphTile {
    * @return  Returns the directed edge builders.
    */
   std::vector<DirectedEdge>& directededges();
-
-  /**
-   * Gets the current list of node transitions (builders).
-   * @return  Returns the node transition builders.
-   */
-  std::vector<DirectedEdge>& transitions();
-
 
   /**
    * Add a transit departure.
@@ -396,6 +390,14 @@ class GraphTileBuilder : public baldr::GraphTile {
     */
    std::vector<EdgeElevation>& edge_elevations();
 
+   /**
+    * Gets the current list of node transition (builders).
+    * @return  Returns a reference to node transition builders.
+    */
+   std::vector<NodeTransition>& transitions() {
+     return transitions_builder_;
+   }
+
  protected:
 
   struct EdgeTupleHasher {
@@ -444,10 +446,6 @@ class GraphTileBuilder : public baldr::GraphTile {
   // List of directed edges. This is a fixed size structure so it can be
   // indexed directly.
   std::vector<DirectedEdge> directededges_builder_;
-
-  // List of node transitions. This is a fixed size structure so it can be
-  // indexed directly.
-  std::vector<DirectedEdge> transitions_builder_;
 
   // List of transit departures. Sorted by directed edge Id and
   // departure time
@@ -509,11 +507,15 @@ class GraphTileBuilder : public baldr::GraphTile {
   // List of lane connectivity records.
   std::vector<LaneConnectivity> lane_connectivity_builder_;
 
+  // lane connectivity list offset
+  uint32_t lane_connectivity_offset_ = 0;
+
   // List of edge elevation records. Index with directed edge Id.
   std::vector<EdgeElevation> edge_elevation_builder_;
 
-  // lane connectivity list offset
-  uint32_t lane_connectivity_offset_ = 0;
+  // List of node transitions. This is a fixed size structure so it can be
+  // indexed directly.
+  std::vector<NodeTransition> transitions_builder_;
 };
 
 }
