@@ -194,7 +194,7 @@ void BidirectionalAStar::ExpandForward(GraphReader& graphreader,
         hierarchy_limits_forward_[node.level()].up_transition_count++;
         ExpandForward(graphreader, trans->endnode(), pred, pred_idx, true);
       } else if (!hierarchy_limits_forward_[trans->endnode().level()].StopExpanding()) {
-        ExpandForward(graphreader, directededge->endnode(), pred, pred_idx, true);
+        ExpandForward(graphreader, trans->endnode(), pred, pred_idx, true);
       }
     }
   }
