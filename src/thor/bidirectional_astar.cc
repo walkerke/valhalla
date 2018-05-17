@@ -185,17 +185,18 @@ void BidirectionalAStar::ExpandForward(GraphReader& graphreader,
     *es = { EdgeSet::kTemporary, idx };
   }
 
+  if (from_transition || nodeinfo->transition_count() == 0) {
+    return;
+  }
+
   // Handle transition edges - expand from the end node of the transition
-  // (unless this is called from a transition).
-  if (!from_transition && nodeinfo->transition_count() > 0) {
-    const NodeTransition* trans = tile->transition(nodeinfo->transition_index());
-    for (uint32_t i = 0; i < nodeinfo->transition_count(); ++i, ++trans) {
-      if (trans->up()) {
-        hierarchy_limits_forward_[node.level()].up_transition_count++;
-        ExpandForward(graphreader, trans->endnode(), pred, pred_idx, true);
-      } else if (!hierarchy_limits_forward_[trans->endnode().level()].StopExpanding()) {
-        ExpandForward(graphreader, trans->endnode(), pred, pred_idx, true);
-      }
+  const NodeTransition* trans = tile->transition(nodeinfo->transition_index());
+  for (uint32_t i = 0; i < nodeinfo->transition_count(); ++i, ++trans) {
+    if (trans->up()) {
+      hierarchy_limits_forward_[node.level()].up_transition_count++;
+      ExpandForward(graphreader, trans->endnode(), pred, pred_idx, true);
+    } else if (!hierarchy_limits_forward_[trans->endnode().level()].StopExpanding()) {
+      ExpandForward(graphreader, trans->endnode(), pred, pred_idx, true);
     }
   }
 }
@@ -289,19 +290,20 @@ void BidirectionalAStar::ExpandReverse(GraphReader& graphreader,
     *es = { EdgeSet::kTemporary, idx };
   }
 
+  if (from_transition || nodeinfo->transition_count() == 0) {
+    return;
+  }
+
   // Handle transition edges - expand from the end node of the transition
-  // (unless this is called from a transition).
-  if (!from_transition && nodeinfo->transition_count() > 0) {
-    const NodeTransition* trans = tile->transition(nodeinfo->transition_index());
-    for (uint32_t i = 0; i < nodeinfo->transition_count(); ++i, ++trans) {
-      if (trans->up()) {
-        hierarchy_limits_reverse_[node.level()].up_transition_count++;
-        ExpandReverse(graphreader, trans->endnode(), pred, pred_idx,
-                   opp_pred_edge, true);
-      } else if (!hierarchy_limits_reverse_[trans->endnode().level()].StopExpanding()) {
-        ExpandReverse(graphreader, trans->endnode(), pred, pred_idx,
-                              opp_pred_edge, true);
-      }
+  const NodeTransition* trans = tile->transition(nodeinfo->transition_index());
+  for (uint32_t i = 0; i < nodeinfo->transition_count(); ++i, ++trans) {
+    if (trans->up()) {
+      hierarchy_limits_reverse_[node.level()].up_transition_count++;
+      ExpandReverse(graphreader, trans->endnode(), pred, pred_idx,
+                 opp_pred_edge, true);
+    } else if (!hierarchy_limits_reverse_[trans->endnode().level()].StopExpanding()) {
+      ExpandReverse(graphreader, trans->endnode(), pred, pred_idx,
+                            opp_pred_edge, true);
     }
   }
 }
