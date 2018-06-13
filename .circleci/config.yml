@@ -13,6 +13,7 @@ jobs:
           keys:
             - ccache
       - run: npm install
+      - run: git diff package-lock.json
       - run: mkdir build
       - run: cd build && cmake .. -DCMAKE_BUILD_TYPE=Release -DCMAKE_EXPORT_COMPILE_COMMANDS=On
       - run: make -C build -j4
