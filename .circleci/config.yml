@@ -44,7 +44,7 @@ jobs:
 
   build-release:
     docker:
-      - image: valhalla/docker:build-2.5.0
+      - image: valhalla/docker:build-2.6.1
     steps:
       - checkout
       - run: git submodule sync && git submodule update --init
