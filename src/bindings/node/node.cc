@@ -125,7 +125,6 @@ private:
     }
   }
 
-
   static std::string ParseRequest(napi_env env, napi_callback_info info, napi_value* jsthis) {
     napi_status status;
     size_t argc = 1;
