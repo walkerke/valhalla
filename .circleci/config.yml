@@ -61,6 +61,7 @@ jobs:
       - run: make -C build -j2 check
       - run: make -C build install
       - run: make -C build package
+      - run: ./scripts/publish.sh
       - save_cache:
           key: ccache
           paths:
