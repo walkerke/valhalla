@@ -61,6 +61,7 @@ jobs:
       - run: make -C build -j2 check
       - run: make -C build install
       - run: make -C build package
+      - run: export PACKAGE_JSON_VERSION=$(node -e "console.log(require('./package.json').version)")
       - run: export PUBLISH=$([[ "${CIRCLE_TAG:-}" == "v${PACKAGE_JSON_VERSION}" ]] && echo "On" || echo "Off")
       - run: ./scripts/publish.sh
       - save_cache:
