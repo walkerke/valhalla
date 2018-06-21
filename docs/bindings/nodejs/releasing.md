@@ -39,7 +39,7 @@ These steps all happen on `master`. After the release is out, create a branch us
 
    ```
    git tag vMAJOR.MINOR.PATCH -a
-   git push --tags
+   git push origin <tag-name>
    ```
 
 1. Publish node-valhalla. **we only do this for stable releases**
@@ -58,6 +58,13 @@ These steps all happen on `master`. After the release is out, create a branch us
    rm -rf node_modules/node-pre-gyp
    npm install node-pre-gyp
    ```
+
+   Test the node module using `npm pack`. It will provide the packed file as a tarball for download. When you then run `npm install` it downloads the tarball and installs it. This test ensures you can do the same locally.
+    - [ ] Run `npm install`
+    - [ ] Test packaging locally with `npm pack`
+      - [ ] run `npm pack`
+      - [ ] move the tarball to a fresh new folder
+      - [ ] run `npm install <name-of-tarball>`
 
    Now we're ready to publish `node-valhalla` to <https://www.npmjs.org/package/valhalla>:
 
