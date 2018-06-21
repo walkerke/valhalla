@@ -11,6 +11,7 @@ dirty=$(git ls-files --modified | grep -v package-lock.json)
 if [[ $dirty ]]; then
     echo $MSG
     echo $dirty
+    echo "HERE"
     exit 1
 else
     exit 0
