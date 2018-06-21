@@ -42,7 +42,8 @@ public:
     };
 
     napi_value actor_constructor;
-    status = napi_define_class(env, "Actor", NAPI_AUTO_LENGTH, New, nullptr, 1, properties, &actor_constructor);
+    status = napi_define_class(env, "Actor", NAPI_AUTO_LENGTH, New, nullptr, 1, properties,
+                               &actor_constructor);
     checkNapiStatus(status, env, "Failed to define class");
 
     status = napi_create_reference(env, actor_constructor, 1, &constructor);
@@ -90,7 +91,8 @@ private:
       }
 
       char config_string[++config_string_size];
-      status = napi_get_value_string_utf8(env, argv[0], config_string, config_string_size, &config_string_size);
+      status = napi_get_value_string_utf8(env, argv[0], config_string, config_string_size,
+                                          &config_string_size);
       checkNapiStatus(status, env, "Failed to get config string");
 
       Actor* obj = new Actor(config_string);
@@ -141,7 +143,8 @@ private:
     }
 
     char request_string[++request_str_size];
-    status = napi_get_value_string_utf8(env, argv[0], request_string, request_str_size, &request_str_size);
+    status =
+        napi_get_value_string_utf8(env, argv[0], request_string, request_str_size, &request_str_size);
     checkNapiStatus(status, env, "Unable to parse arg string");
     std::string reqString(request_string, request_str_size);
 

@@ -100,3 +100,4 @@ workflows:
       - lint
       - build-debug
       - build-release
+      - build-osx
