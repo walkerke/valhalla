@@ -49,9 +49,7 @@ public:
     status = napi_create_reference(env, actor_constructor, 1, &constructor);
     checkNapiStatus(status, env, "Failed to create constructor reference");
 
-    status = napi_set_named_property(env, exports, "Actor", actor_constructor);
-    checkNapiStatus(status, env, "Failed to set constructor on exports");
-    return exports;
+    return actor_constructor;
   }
   static void Destructor(napi_env env, void* nativeObject, void* finalize_hint) {
     delete reinterpret_cast<Actor*>(nativeObject);

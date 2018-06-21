@@ -193,10 +193,10 @@ The Node.js bindings provide read-only access to the routing engine. You can ins
 
 Example of using in a node project:
 ```js
-var valhalla = require('valhalla');
-var router = new valhalla.Actor(configString);
+var Valhalla = require('valhalla');
+var valhalla = new Valhalla(configString);
 var hersheyRequest = '{"locations":[{"lat":40.546115,"lon":-76.385076,"type":"break"}, {"lat":40.544232,"lon":-76.385752,"type":"break"}],"costing":"auto"}';
-var route = router.route(hersheyRequest); // returns a string
+var route = valhalla.route(hersheyRequest); // returns a string
 ```
 
 Please see the releasing docs for information on releasing a new version.
