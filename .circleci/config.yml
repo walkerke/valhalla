@@ -76,9 +76,8 @@ jobs:
       xcode: "9.2.0"
     steps:
       - run: brew install protobuf --without-python@2
-      - run: sudo chown $USER:admin /usr/local/bin/2to3-2
-      - run: brew install libspatialite
-      - run: brew install cmake libtool boost-python pkg-config lua jq curl wget czmq lz4
+      - run: brew upgrade python
+      - run: brew install cmake libtool boost-python libspatialite pkg-config lua jq curl wget czmq lz4
       - checkout
       - run: git submodule sync && git submodule update --init
       - restore_cache:
