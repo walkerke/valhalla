@@ -33,7 +33,6 @@ else
       if [[ ${COMMIT_MESSAGE} =~ "[publish binary]" ]]; then
           echo "Publishing"
           echo "dumping binary meta..."
-          ./node_modules/.bin/node-pre-gyp reveal $NPM_FLAGS
           ./node_modules/.bin/node-pre-gyp package publish $@
       elif [[ ${COMMIT_MESSAGE} =~ "[republish binary]" ]]; then
           echo "Re-Publishing"
