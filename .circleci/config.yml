@@ -65,6 +65,7 @@ jobs:
           command: |
             export PACKAGE_JSON_VERSION=$(node -e "console.log(require('./package.json').version)")
             export PUBLISH=$([[ "${CIRCLE_TAG:-}" == "v${PACKAGE_JSON_VERSION}" ]] && echo "On" || echo "Off")
+            export COMMIT_MESSAGE=$(git log --format=oneline -n 1 ${CIRCLE_SHA1})
             ./scripts/publish.sh
       - save_cache:
           key: ccache

@@ -8,6 +8,23 @@ which node
 node -v
 
 
+function is_pr_merge() {
+  # Get the commit message via git log
+  # This should always be the exactly the text the developer provided
+  local COMMIT_LOG=${COMMIT_MESSAGE}
+
+  # Get the commit message via git show
+  # If the gitsha represents a merge then this will
+  # look something like "Merge e3b1981 into 615d2a3"
+  # Otherwise it will be the same as the "git log" output
+  export COMMIT_SHOW=$(git show -s --format=%B | tr -d '\n')
+
+  if [[ "${COMMIT_LOG}" != "${COMMIT_SHOW}" ]]; then
+     echo true
+  fi
+}
+
+
 if [[ $(is_pr_merge) ]]; then
       echo "Skipping publishing because this is a PR merge commit"
 else
