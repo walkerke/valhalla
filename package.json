@@ -32,7 +32,7 @@
     "tape": "^4.9.0"
   },
   "binary": {
-    "module_name": "node_valhalla",
+    "module_name": "valhalla",
     "module_path": "./lib/binding",
     "host": "https://mapbox-node-binary.s3.amazonaws.com",
     "remote_path": "./{module_name}/v{version}/{configuration}/",
