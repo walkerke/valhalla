@@ -84,7 +84,7 @@ jobs:
       #     keys:
       #       - ccache
       - run: npm install
-      - run: mkdir build
+      - run: mkdir -p build
       - run: cd build && cmake ..
       - run: make -C build -j4
       - run: make -C build -j2 tests
