@@ -15,7 +15,7 @@ function is_pr_merge() {
 
   # Get the commit message via git show
   # If the gitsha represents a merge then this will
-  # look something like "Merge e3b1981 into 615d2a3"
+  # look something like "Merge e3b1981 into 615d2a2"
   # Otherwise it will be the same as the "git log" output
   export COMMIT_SHOW=$(git show -s --format=%B | tr -d '\n')
 
