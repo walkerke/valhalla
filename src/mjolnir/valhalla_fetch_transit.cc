@@ -151,6 +151,10 @@ struct weighted_tile_t {
 std::priority_queue<weighted_tile_t> which_tiles(const ptree& pt, const std::string& feed) {
   // now real need to catch exceptions since we can't really proceed without this stuff
   LOG_INFO("Fetching transit feeds");
+  
+  auto transit_feed_id = pt.get_optional<std::string>("mjolnir.transit_feed_id")
+                            ? "&tag_key=feed_id&tag_value=" + pt.get<std::string>("mjolnir.transit_feed_id")
+                            : ""; 
 
   auto transit_bounding_box = pt.get_optional<std::string>("mjolnir.transit_bounding_box")
                                   ? "&bbox=" + pt.get<std::string>("mjolnir.transit_bounding_box")
@@ -169,6 +173,7 @@ std::priority_queue<weighted_tile_t> which_tiles(const ptree& pt, const std::str
   const auto& tile_level = TileHierarchy::levels().rbegin()->second;
   pt_curler_t curler;
   auto request = url("/api/v1/feeds.geojson?per_page=false", pt);
+  request += transit_feed_id; 
   request += transit_bounding_box;
   request += active_feed_version_import_level;
   auto feeds = curler(request, "features");
@@ -1030,12 +1035,12 @@ void stitch(const ptree& pt,
 int main(int argc, char** argv) {
   if (argc < 2) {
     std::cerr << "Usage: " << std::string(argv[0])
-              << " valhalla_config transit_land_url per_page [target_directory] [bounding_box] "
+              << " valhalla_config transit_land_url per_page [target_directory] [feed_id] [bounding_box] "
                  "[transit_land_api_key]"
               << std::endl;
     std::cerr << "Sample: " << std::string(argv[0])
               << " conf/valhalla.json http://transit.land/ 1000 ./transit_tiles "
-                 "-31.56,36.63,-6.18,42.16 transitland-YOUR_KEY_SUFFIX"
+                 "feed_id -31.56,36.63,-6.18,42.16 transitland-YOUR_KEY_SUFFIX"
               << std::endl;
     return 1;
   }
@@ -1052,24 +1057,28 @@ int main(int argc, char** argv) {
     pt.add("mjolnir.transit_dir", std::string(argv[4]));
   }
   if (argc > 5) {
-    pt.get_child("mjolnir").erase("transit_bounding_box");
-    pt.add("mjolnir.transit_bounding_box", std::string(argv[5]));
+    pt.get_child("mjolnir").erase("transit_feed_id"); 
+    pt.add("mjolnir.transit_feed_id", std::string(argv[5])); 
   }
   if (argc > 6) {
-    pt.erase("api_key");
-    pt.add("api_key", std::string(argv[6]));
+    pt.get_child("mjolnir").erase("transit_bounding_box");
+    pt.add("mjolnir.transit_bounding_box", std::string(argv[6]));
   }
   if (argc > 7) {
+    pt.erase("api_key");
+    pt.add("api_key", std::string(argv[7]));
+  }
+  if (argc > 8) {
     pt.erase("import_level");
-    pt.add("import_level", std::string(argv[7]));
+    pt.add("import_level", std::string(argv[8]));
   }
 
   // yes we want to curl
   curl_global_init(CURL_GLOBAL_DEFAULT);
 
   std::string feed;
-  if (argc > 8) {
-    feed = std::string(argv[8]);
+  if (argc > 9) {
+    feed = std::string(argv[9]);
   }
 
   // go get information about what transit tiles we should be fetching
