@@ -2400,7 +2400,7 @@ int main(int argc, char** argv) {
     pt.add("mjolnir.transit_dir", std::string(argv[4]));
   }
   if (argc > 5) {
-    pt.get_child("mjolnir").erase("transit_feed_id")
+    pt.get_child("mjolnir").erase("transit_feed_id"); 
     pt.add("mjolnir.transit_feed_id", std::string(argv[5])); 
   }
   if (argc > 6) {
