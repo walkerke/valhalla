@@ -152,7 +152,7 @@ std::priority_queue<weighted_tile_t> which_tiles(const ptree& pt, const std::str
   // now real need to catch exceptions since we can't really proceed without this stuff
   LOG_INFO("Fetching transit feeds");
   
-  auto transit_feed_id = pt.get_optional<std::string>("mjolnir.transit_onestop_ids")
+  auto transit_onestop_ids = pt.get_optional<std::string>("mjolnir.transit_onestop_ids")
                             ? "&onestop_id==" + pt.get<std::string>("mjolnir.transit_onestop_ids")
                             : ""; 
 
@@ -1040,7 +1040,7 @@ int main(int argc, char** argv) {
               << std::endl;
     std::cerr << "Sample: " << std::string(argv[0])
               << " conf/valhalla.json http://transit.land/ 1000 ./transit_tiles "
-                 "onestop_id -31.56,36.63,-6.18,42.16 transitland-YOUR_KEY_SUFFIX"
+                 "onestop_ids -31.56,36.63,-6.18,42.16 transitland-YOUR_KEY_SUFFIX"
               << std::endl;
     return 1;
   }
