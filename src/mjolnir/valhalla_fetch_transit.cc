@@ -152,8 +152,8 @@ std::priority_queue<weighted_tile_t> which_tiles(const ptree& pt, const std::str
   // now real need to catch exceptions since we can't really proceed without this stuff
   LOG_INFO("Fetching transit feeds");
   
-  auto transit_feed_id = pt.get_optional<std::string>("mjolnir.transit_feed_id")
-                            ? "&tag_key=feed_id&tag_value=" + pt.get<std::string>("mjolnir.transit_feed_id")
+  auto transit_feed_id = pt.get_optional<std::string>("mjolnir.transit_onestop_ids")
+                            ? "&onestop_id==" + pt.get<std::string>("mjolnir.transit_onestop_ids")
                             : ""; 
 
   auto transit_bounding_box = pt.get_optional<std::string>("mjolnir.transit_bounding_box")
@@ -173,7 +173,7 @@ std::priority_queue<weighted_tile_t> which_tiles(const ptree& pt, const std::str
   const auto& tile_level = TileHierarchy::levels().rbegin()->second;
   pt_curler_t curler;
   auto request = url("/api/v1/feeds.geojson?per_page=false", pt);
-  request += transit_feed_id; 
+  request += transit_onestop_ids; 
   request += transit_bounding_box;
   request += active_feed_version_import_level;
   auto feeds = curler(request, "features");
@@ -1035,12 +1035,12 @@ void stitch(const ptree& pt,
 int main(int argc, char** argv) {
   if (argc < 2) {
     std::cerr << "Usage: " << std::string(argv[0])
-              << " valhalla_config transit_land_url per_page [target_directory] [feed_id] [bounding_box] "
+              << " valhalla_config transit_land_url per_page [target_directory] [onestop_ids] [bounding_box] "
                  "[transit_land_api_key]"
               << std::endl;
     std::cerr << "Sample: " << std::string(argv[0])
               << " conf/valhalla.json http://transit.land/ 1000 ./transit_tiles "
-                 "feed_id -31.56,36.63,-6.18,42.16 transitland-YOUR_KEY_SUFFIX"
+                 "onestop_id -31.56,36.63,-6.18,42.16 transitland-YOUR_KEY_SUFFIX"
               << std::endl;
     return 1;
   }
@@ -1057,8 +1057,8 @@ int main(int argc, char** argv) {
     pt.add("mjolnir.transit_dir", std::string(argv[4]));
   }
   if (argc > 5) {
-    pt.get_child("mjolnir").erase("transit_feed_id"); 
-    pt.add("mjolnir.transit_feed_id", std::string(argv[5])); 
+    pt.get_child("mjolnir").erase("transit_onestop_ids"); 
+    pt.add("mjolnir.transit_onestop_ids", std::string(argv[5])); 
   }
   if (argc > 6) {
     pt.get_child("mjolnir").erase("transit_bounding_box");
