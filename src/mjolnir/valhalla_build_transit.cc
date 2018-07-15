@@ -2401,7 +2401,7 @@ int main(int argc, char** argv) {
   }
   if (argc > 5) {
     pt.get_child("mjolnir").erase("transit_onestop_ids"); 
-    pt.add("mjolnir.transit_feed_id", std::string(argv[5])); 
+    pt.add("mjolnir.transit_onestop_ids", std::string(argv[5])); 
   }
   if (argc > 6) {
     pt.get_child("mjolnir").erase("transit_bounding_box");
