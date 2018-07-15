@@ -221,7 +221,7 @@ help_text = {
     'admin': 'Location of sqlite file holding admin polygons created with valhalla_build_admins',
     'timezone': 'Location of sqlite file holding timezone information created with valhalla_build_timezones',
     'transit_dir': 'Location of intermediate transit tiles created with valhalla_build_transit',
-    'transit_feed_id': 'Add comma separated onestop IDs to only download transit data for the selected feeds', 
+    'transit_onestop_ids': 'Add comma separated onestop IDs to only download transit data for the selected feeds', 
     'transit_bounding_box': 'Add comma separated bounding box values to only download transit data inside the given bounding box',
     'hierarchy': 'bool indicating whether road hierarchy is to be built - default to True',
     'shortcuts': 'bool indicating whether shortcuts are to be built - default to True',
