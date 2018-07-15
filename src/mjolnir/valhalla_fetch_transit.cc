@@ -153,7 +153,7 @@ std::priority_queue<weighted_tile_t> which_tiles(const ptree& pt, const std::str
   LOG_INFO("Fetching transit feeds");
   
   auto transit_onestop_ids = pt.get_optional<std::string>("mjolnir.transit_onestop_ids")
-                            ? "&onestop_id==" + pt.get<std::string>("mjolnir.transit_onestop_ids")
+                            ? "&onestop_id=" + pt.get<std::string>("mjolnir.transit_onestop_ids")
                             : ""; 
 
   auto transit_bounding_box = pt.get_optional<std::string>("mjolnir.transit_bounding_box")

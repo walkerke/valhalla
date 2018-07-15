@@ -2379,7 +2379,7 @@ int main(int argc, char** argv) {
   if (argc < 2) {
     std::cerr << "Usage: " << std::string(argv[0])
               << " valhalla_config transit_land_url per_page [target_directory] [onestop_ids] [bounding_box]"
-                 "[transit_land_api_key]"
+                 " [transit_land_api_key]"
               << std::endl;
     std::cerr << "Sample: " << std::string(argv[0])
               << " conf/valhalla.json http://transit.land/ 1000 ./transit_tiles "
