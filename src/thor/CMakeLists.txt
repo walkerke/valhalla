@@ -8,12 +8,11 @@ set(sources
   map_matcher.cc
   multimodal.cc
   optimizer.cc
-  trippathbuilder.cc
+  triplegbuilder.cc
   attributes_controller.cc
   route_matcher.cc
   timedep_forward.cc
   timedep_reverse.cc
-  trafficalgorithm.cc
   timedistancematrix.cc
   worker.cc
   isochrone_action.cc
@@ -30,9 +29,15 @@ valhalla_module(NAME thor
     PUBLIC
       ${VALHALLA_SOURCE_DIR}
       ${VALHALLA_SOURCE_DIR}/valhalla
+      ${VALHALLA_SOURCE_DIR}/third_party/date/include
+      $<$<BOOL:${MSVC}>:${VALHALLA_SOURCE_DIR}/third_party/dirent/include>
     PRIVATE
       ${VALHALLA_SOURCE_DIR}/third_party/rapidjson/include
       ${CMAKE_BINARY_DIR}
   DEPENDS
     valhalla::proto
+    valhalla::sif
+    valhalla::meili
+    ${valhalla_protobuf_targets}
+    Boost::boost
     libprime_server)

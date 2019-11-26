@@ -4,16 +4,19 @@
 #include <string>
 #include <vector>
 
+#include "baldr/graphconstants.h"
 #include "baldr/graphid.h"
 #include "baldr/graphreader.h"
 #include "baldr/nodeinfo.h"
+#include "midgard/util.h"
 #include "mjolnir/graphtilebuilder.h"
 
-#include <boost/property_tree/json_parser.hpp>
+#include "baldr/rapidjson_utils.h"
 #include <boost/property_tree/ptree.hpp>
 
 using namespace valhalla::baldr;
 using namespace valhalla::mjolnir;
+using namespace valhalla::midgard;
 
 namespace {
 
@@ -21,7 +24,7 @@ boost::property_tree::ptree json_to_pt(const std::string& json) {
   std::stringstream ss;
   ss << json;
   boost::property_tree::ptree pt;
-  boost::property_tree::read_json(ss, pt);
+  rapidjson::read_json(ss, pt);
   return pt;
 }
 
@@ -81,10 +84,85 @@ void test_predictive_traffic() {
     throw std::runtime_error("Incorrect number of edges updated.  Count: " + std::to_string(count));
 }
 
+void test_get_speed() {
+  GraphReader reader(config.get_child("mjolnir"));
+
+  // fixture traffic tile 0/003/196.gph
+  GraphId id("0/3196/0");
+  auto tile = reader.GetGraphTile(id);
+  auto de = tile->directededge(id);
+
+  if (!de->has_predicted_speed())
+    throw std::runtime_error("No predicted speed on edge " + std::to_string(id));
+
+  if (!de->constrained_flow_speed())
+    throw std::runtime_error("No constrained speed on edge " + std::to_string(id));
+
+  if (!de->free_flow_speed())
+    throw std::runtime_error("No freeflow speed on edge " + std::to_string(id));
+
+  // Test cases where constrained flow speed is returned
+  auto expected = 35;
+  std::vector<uint32_t> actuals = {tile->GetSpeed(de), tile->GetSpeed(de, kConstrainedFlowMask),
+                                   tile->GetSpeed(de, kConstrainedFlowMask, 25201)};
+  for (auto actual : actuals) {
+    if (actual != expected) {
+      throw std::runtime_error("Expected constrained speed | " + std::to_string(actual) +
+                               " != " + std::to_string(expected));
+    }
+  }
+
+  // Test cases where free flow speed is returned
+  expected = 45;
+  actuals = {tile->GetSpeed(de, kFreeFlowMask), tile->GetSpeed(de, kFreeFlowMask, kSecondsPerDay),
+             tile->GetSpeed(de, kFreeFlowMask, 0)};
+  for (auto actual : actuals) {
+    if (actual != expected) {
+      throw std::runtime_error("Expected freeflow speed | " + std::to_string(actual) +
+                               " != " + std::to_string(expected));
+    }
+  }
+
+  // Test cases where predicted flow speed is returned
+  expected = 23;
+  auto actual = tile->GetSpeed(de, kPredictedFlowMask, kConstrainedFlowSecondOfDay);
+  if (actual != expected) {
+    throw std::runtime_error("Expected predicted speed | " + std::to_string(actual) +
+                             " != " + std::to_string(expected));
+  }
+
+  // Test cases where we has for a time of day that is huge
+  expected = 23;
+  actual = tile->GetSpeed(de, kPredictedFlowMask, kConstrainedFlowSecondOfDay + kSecondsPerWeek);
+  if (actual != expected) {
+    throw std::runtime_error("Expected predicted speed | " + std::to_string(actual) +
+                             " != " + std::to_string(expected));
+  }
+
+  // Test flow_sources
+  uint8_t flow_sources;
+  tile->GetSpeed(de, kPredictedFlowMask, kConstrainedFlowSecondOfDay, &flow_sources);
+  if (!(flow_sources & kPredictedFlowMask)) {
+    throw std::runtime_error("Expected flow_sources to include predicted");
+  }
+
+  tile->GetSpeed(de, kConstrainedFlowMask, kConstrainedFlowSecondOfDay, &flow_sources);
+  if (flow_sources & kPredictedFlowMask) {
+    throw std::runtime_error("Expected flow_sources not to include predicted");
+  }
+
+  tile->GetSpeed(de, kNoFlowMask, kConstrainedFlowSecondOfDay, &flow_sources);
+  if (flow_sources & kPredictedFlowMask) {
+    throw std::runtime_error("Expected flow_sources not to include predicted");
+  }
+}
+
 int main(int argc, char* argv[]) {
   test::suite suite("predictive_traffic");
   // TODO - add this back in when updated data is available!
   //  suite.test(TEST_CASE(test_predictive_traffic));
+
+  suite.test(TEST_CASE(test_get_speed));
 
   return suite.tear_down();
 }

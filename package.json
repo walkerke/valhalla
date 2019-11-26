@@ -1,13 +1,13 @@
 {
   "name": "valhalla",
-  "version": "3.0.0-alpha.1",
+  "version": "3.0.0-rc.4",
   "main": "lib/index.js",
   "directories": {
     "doc": "docs",
     "test": "test"
   },
   "scripts": {
-    "test": "node --expose-gc test/nodejs/*.test.js",
+    "test": "tape test/bindings/nodejs/*.test.js",
     "install": "node-pre-gyp install --fallback-to-build=false || ./scripts/node_install.sh"
   },
   "engines": {
@@ -25,6 +25,8 @@
   },
   "homepage": "https://github.com/valhalla/valhalla#readme",
   "dependencies": {
+    "generic-pool": "3.4.2",
+    "node-addon-api": "1.4.0",
     "node-pre-gyp": "^0.10.0"
   },
   "binary": {

@@ -1,9 +1,3 @@
-## :rotating_light: UNDER CONSTRUCTION - MASTER NOT STABLE :rotating_light:
-While Valhalla on v3.0 is under development, we recommend that you use the last stable release, [2.6.1](https://github.com/valhalla/valhalla/releases/tag/2.6.1) until further notice.
-
-Pull requests against master are still welcome, though one may need to pay extra attention to the breaking changes in progress.
-
----
 
 
 
@@ -19,21 +13,26 @@ Pull requests against master are still welcome, though one may need to pay extra
          ░                                                                    
 
 
+### NOTICE
+Valhalla 3.0 is now available!
+This release (current master) makes changes to the Valhalla graph tile format. These tile changes are designed to make the tile data more efficient and flexible. However, these changes make Valhalla 3.0 incompatible with data from Valhalla 2.x. Also, any data built using Valhalla 3.0 will not be usable with Valhalla 2.x. See the [CHANGELOG](CHANGELOG.md) to get a brief description of the updates.
+
+------------
 Valhalla is an open source routing engine and accompanying libraries for use with OpenStreetMap data. Valhalla also includes tools like time+distance matrix computation, isochrones, elevation sampling, map matching and tour optimization (Travelling Salesman).
 
 Build Status
 ------------
 
-| Linux | Code Coverage |
-| ----- | ------------- |
-| [![Circle CI](https://circleci.com/gh/valhalla/valhalla.svg?style=svg)](https://circleci.com/gh/valhalla/valhalla) | [![codecov](https://codecov.io/gh/valhalla/valhalla/branch/master/graph/badge.svg)](https://codecov.io/gh/valhalla/valhalla) |
+| Linux/MacOs | Windows | Code Coverage |
+| ----------- | ------- | ------------- |
+| [![Circle CI](https://circleci.com/gh/valhalla/valhalla.svg?style=svg)](https://circleci.com/gh/valhalla/valhalla) | [![Build Status](https://dev.azure.com/valhalla1/valhalla/_apis/build/status/valhalla.valhalla?branchName=master)](https://dev.azure.com/valhalla1/valhalla/_build/latest?definitionId=1&branchName=master) | [![codecov](https://codecov.io/gh/valhalla/valhalla/branch/master/graph/badge.svg)](https://codecov.io/gh/valhalla/valhalla) |
 
 
 
 License
 -------
 
-Valhalla, and all of the projects under the Valhalla organization, use the [MIT License](COPYING).
+Valhalla, and all of the projects under the Valhalla organization, use the [MIT License](COPYING).  Avatar/logo by [Jordan](https://www.instagram.com/jaykaydraws/)
 
 Overview
 --------
@@ -68,7 +67,7 @@ The Valhalla organization is comprised of several library modules each responsib
 Documentation
 --------
 
-Technical documentation for the various components of the library can be found here: [docs](docs). Service API documentation as well as links to a variety of technical descriptions are provided within the [valhalla-docs](https://github.com/valhalla/valhalla-docs) repository.
+Documentation is stored in the `docs/` folder in this GitHub repository. It can be viewed at [valhalla.readthedocs.io](https://valhalla.readthedocs.io/).
 
 Get Valhalla from Personal Package Archive (PPA)
 ------------------------------------------------
@@ -85,43 +84,54 @@ sudo apt-get install -y valhalla-bin
 Building from Source
 --------------------
 
-Valhalla uses CMake as build system.
+Valhalla uses CMake as build system. When compiling with gcc (GNU Compiler Collection), version 5 or newer is supported.
 
 To install on a Debian or Ubuntu system you need to install its dependencies with:
 
 ```bash
 sudo add-apt-repository -y ppa:valhalla-core/valhalla
 sudo apt-get update
-sudo apt-get install -y cmake make libtool pkg-config g++ gcc jq lcov protobuf-compiler vim-common libboost-all-dev libboost-all-dev libcurl4-openssl-dev zlib1g-dev liblz4-dev libprime-server0.6.3-dev libprotobuf-dev prime-server0.6.3-bin nodejs npm
+sudo apt-get install -y cmake make libtool pkg-config g++ gcc jq lcov protobuf-compiler vim-common locales libboost-all-dev libcurl4-openssl-dev zlib1g-dev liblz4-dev libprime-server-dev libprotobuf-dev prime-server-bin
 #if you plan to compile with data building support, see below for more info
 sudo apt-get install -y libgeos-dev libgeos++-dev liblua5.2-dev libspatialite-dev libsqlite3-dev lua5.2 wget
-if [[ $(grep -cF xenial /etc/lsb-release) > 0 ]]; then sudo apt-get install -y libsqlite3-mod-spatialite; fi
+source /etc/lsb-release
+if [[ $(python -c "print int($DISTRIB_RELEASE > 15)") > 0 ]]; then sudo apt-get install -y libsqlite3-mod-spatialite; fi
 #if you plan to compile with python bindings, see below for more info
 sudo apt-get install -y python-all-dev
-#if you plan to compile with node bindings, run
-nvm use 10 # must use node 8.11.1 and up because of N-API
+#if you plan to compile with node bindings
+curl -o- https://raw.githubusercontent.com/creationix/nvm/v0.33.11/install.sh | bash #follow instructions in output to use nvm without starting a new bash session
+nvm install 10
+nvm use 10
 npm install --ignore-scripts
 ```
+
+For instructions on installing Valhalla on Ubuntu 18.04.x see this [script](scripts/Ubuntu_Bionic_Install.sh).
 
 To install on macOS, you need to install its dependencies with [Homebrew](http://brew.sh):
 
 ```bash
 # install dependencies (czmq is required by prime_server)
 brew install cmake libtool protobuf-c boost-python libspatialite pkg-config sqlite3 lua jq curl wget czmq lz4 node@10 npm
+curl -o- https://raw.githubusercontent.com/creationix/nvm/v0.33.11/install.sh | bash
 nvm use 10 # must use node 8.11.1 and up because of N-API
 npm install --ignore-scripts
 ```
 
-Then clone and build [`prime_server`](https://github.com/kevinkreiser/prime_server#build-and-install).
+Now, clone the Valhalla repository
+
+```bash
+git clone --recurse-submodules https://github.com/valhalla/valhalla.git
+```
+
+Then, build [`prime_server`](https://github.com/kevinkreiser/prime_server#build-and-install).
 
 After getting the dependencies install it with:
 
 ```bash
-git submodule update --init --recursive
 mkdir build
 cd build
 cmake .. -DCMAKE_BUILD_TYPE=Release
-make -j$(nproc)
+make -j$(nproc) # for macos, use: make -j$(sysctl -n hw.physicalcpu) 
 sudo make install
 ```
 
@@ -134,6 +144,7 @@ Important build options include:
 | `-DENABLE_SERVICES` (`On` / `Off`) | Build the HTTP service|
 | `-DBUILD_SHARED_LIBS` (`On` / `Off`) | Build static or shared libraries|
 | `-DENABLE_NODE_BINDINGS` (`ON` / `OFF`) | Build the node bindings (defaults to on)|
+| `-DENABLE_COMPILER_WARNINGS` (`ON` / `OFF`) | Build with common compiler warnings as errors (defaults to off)|
 
 For more build options run the interactive GUI:
 
@@ -190,20 +201,20 @@ Also note that we run some `clang-tidy` linting over the code as well (see `.cla
 Using the Node.js Bindings
 --------------------------
 
-The Node.js bindings are still under construction. We are working on building binaries for as many environments as possible, but they may not all be available yet. The first functionality that we are exposing is `route`, but we plan on exposing more functionality over time. Right now, the input and the output are both strings - THAT WILL CHANGE. We plan on ingesting and producing protobufs.
+The Node.js bindings are still under construction. We are working on building binaries for as many environments as possible, but they may not all be available yet. We have exposed all of the `tyr::actor_t` actions to the bindings (`route`, `locate`, `height`, `isochrone`, `matrix`, `optimizedRoute`, `traceAttributes`, `traceRoute`, `transitAvailable`). Right now, the input and the output are both strings - THAT WILL LIKELY CHANGE. We plan on ingesting and producing protobufs and/or json.
 
-The Node.js bindings provide read-only access to the routing engine. You can install the Node.js bindings from this repository via `$npm install` which will check and use pre-built binaries if they're available for this release and your Node version. You can also run `npm install valhalla` to include the package as a dependency in another project, but we do not have a stable version of the bindings available on the npm org yet. We also may not have built binaries for your particular setup. See the CHANGELOG for more info. You can also build bindings from source with the ENABLE_NODE_BINDINGS option.
+The Node.js bindings provide read-only access to the routing engine. You can install the Node.js bindings from this repository via `$npm install` which will check and use pre-built binaries if they're available for this release and your Node version. You can also run `npm install valhalla` to include the package as a dependency in another project, but we do not have a stable version of the bindings available on the npm org yet. Check the CHANGELOG for the details of the latest release. We also may not have built binaries for your particular setup. You can also build bindings from source with the ENABLE_NODE_BINDINGS option.
 
-We are using [node-pre-gyp](https://github.com/mapbox/node-pre-gyp) to manage the bindings for different build systems, and N-API to write the bindings themselves. Node-pre-gyp hooks into the `npm install` command and goes looking on s3 for the appropriate binary for the system on which it was run. CircleCI currently builds release and debug binaries for linux. To use the debug binaries, run `npm install --debug` and node-pre-gyp will be told to go find the debug binary instead of the release one.
+We are using [node-pre-gyp](https://github.com/mapbox/node-pre-gyp) to manage the bindings for different build systems, and N-API to write the bindings themselves. Node-pre-gyp hooks into the `npm install` command and goes looking on s3 for the appropriate binary for the system on which it was run. CircleCI currently builds release and debug binaries for linux, and publishes them to s3. To use the debug binaries, run `npm install --debug` and node-pre-gyp will be told to go find the debug binary instead of the release one.
 
-N-API aims to provide ABI compatibility guarantees across different Node versions and also across different Node VMs - allowing N-API enabled native modules to just work across different versions and flavors of Node.js without recompilations. N-API is a new feature and was experimental until node 8.11.3, after which is it considered stable. Please make sure you are using node 8.11.3+ or node 10 if you want to use the node bindings. We have tested the bindings on 8.11.3, 10.3.0, and 10.6.0 - it is probably safest to pin your node version to one of those, since we have only built binaries for N-API v3. We will consider building binaries for newer N-API versions when and if they are released.
+N-API aims to provide ABI compatibility guarantees across different Node versions and also across different Node VMs - allowing N-API enabled native modules to just work across different versions and flavors of Node.js without recompilations. N-API is a new feature and was experimental until node 8.11.2, after which is it considered stable. Please make sure you are using node 8.11.2+ or node 10 if you want to use the node bindings. We have tested the bindings on 8.11.2, 10.3.0, and 10.6.0 - it is probably safest to pin your node version to one of those, since we have only built binaries for N-API v3. We will consider building binaries for newer N-API versions when and if they are released.
 
 Example of using in a node project:
 ```js
 var Valhalla = require('valhalla');
 var valhalla = new Valhalla(configString);
 var hersheyRequest = '{"locations":[{"lat":40.546115,"lon":-76.385076,"type":"break"}, {"lat":40.544232,"lon":-76.385752,"type":"break"}],"costing":"auto"}';
-var route = valhalla.route(hersheyRequest); // returns a string
+var route = valhalla.route(hersheyRequest); // returns a string, other actions also available
 ```
 
 Please see the releasing docs for information on releasing a new version.

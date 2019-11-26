@@ -158,137 +158,30 @@ Tiles<coord_t>::Tiles(const AABB2<coord_t>& bounds,
                       const float tilesize,
                       unsigned short subdivisions,
                       bool wrapx)
-    : tilebounds_(bounds), tilesize_(tilesize), nsubdivisions_(subdivisions), wrapx_(wrapx) {
-  tilebounds_ = bounds;
-  tilesize_ = tilesize;
-  subdivision_size_ = tilesize_ / nsubdivisions_;
-  ncolumns_ = static_cast<int32_t>(std::ceil((bounds.maxx() - bounds.minx()) / tilesize_));
-  nrows_ = static_cast<int32_t>(std::ceil((bounds.maxy() - bounds.miny()) / tilesize_));
+    : tilebounds_(bounds), tilesize_(tilesize), nsubdivisions_(subdivisions),
+      subdivision_size_(tilesize_ / nsubdivisions_), wrapx_(wrapx) {
+  auto columns = bounds.Width() / tilesize_;
+  auto rows = bounds.Height() / tilesize_;
+  // TODO: delete this constructor and force use of the lower one
+  // this is not safe because tilesize may not evenly divide into the bounds dimensions
+  ncolumns_ = static_cast<int32_t>(std::round(columns));
+  nrows_ = static_cast<int32_t>(std::round(rows));
 }
 
-// Shift the tilebounds
-template <class coord_t> void Tiles<coord_t>::ShiftTileBounds(const coord_t& shift) {
-  tilebounds_ = AABB2<coord_t>(tilebounds_.minx() - shift.first, tilebounds_.miny() - shift.second,
-                               tilebounds_.maxx() - shift.first, tilebounds_.maxy() - shift.second);
-}
-
-// Get the "row" based on y.
-template <class coord_t> int32_t Tiles<coord_t>::Row(const float y) const {
-  // Return -1 if outside the tile system bounds
-  if (y < tilebounds_.miny() || y > tilebounds_.maxy()) {
-    return -1;
-  }
-
-  // If equal to the max y return the largest row
-  if (y == tilebounds_.maxy()) {
-    return nrows_ - 1;
-  } else {
-    return static_cast<int32_t>((y - tilebounds_.miny()) / tilesize_);
-  }
-}
-
-// Get the "column" based on x.
-template <class coord_t> int32_t Tiles<coord_t>::Col(const float x) const {
-  // Return -1 if outside the tile system bounds
-  if (x < tilebounds_.minx() || x > tilebounds_.maxx()) {
-    return -1;
-  }
-
-  // If equal to the max x return the largest column
-  if (x == tilebounds_.maxx()) {
-    return ncolumns_ - 1;
-  } else {
-    float col = (x - tilebounds_.minx()) / tilesize_;
-    return (col >= 0.0) ? static_cast<int32_t>(col) : static_cast<int32_t>(col - 1);
-  }
-}
-
-// Convert x,y to a tile Id.
-template <class coord_t> int32_t Tiles<coord_t>::TileId(const float y, const float x) const {
-  // Return -1 if totally outside the extent.
-  if (y < tilebounds_.miny() || x < tilebounds_.minx() || y > tilebounds_.maxy() ||
-      x > tilebounds_.maxx()) {
-    return -1;
-  }
-
-  // Find the tileid by finding the latitude row and longitude column
-  return (Row(y) * ncolumns_) + Col(x);
-}
-
-// Get a maximum tileid given a bounds and a tile size.
+// this constructor forces you to specify your tileset in such a way that it conforms to
+// an integer number of columns and rows as well as a tile_size which is evenly divisible into the
+// bounds dimensions
 template <class coord_t>
-uint32_t Tiles<coord_t>::MaxTileId(const AABB2<coord_t>& bbox, const float tile_size) {
-  uint32_t cols = static_cast<uint32_t>(std::ceil(bbox.Width() / tile_size));
-  uint32_t rows = static_cast<uint32_t>(std::ceil(bbox.Height() / tile_size));
-  return (cols * rows) - 1;
-}
-
-// Get the base x,y (or lng,lat) of a specified tile.
-template <class coord_t> coord_t Tiles<coord_t>::Base(const int32_t tileid) const {
-  int32_t row = tileid / ncolumns_;
-  int32_t col = tileid - (row * ncolumns_);
-  return coord_t(tilebounds_.minx() + (col * tilesize_), tilebounds_.miny() + (row * tilesize_));
-}
-
-// Get the bounding box of the specified tile.
-template <class coord_t> AABB2<coord_t> Tiles<coord_t>::TileBounds(const int32_t tileid) const {
-  Point2 base = Base(tileid);
-  return AABB2<coord_t>(base.x(), base.y(), base.x() + tilesize_, base.y() + tilesize_);
-}
-
-// Get the bounding box of the tile with specified row, column.
-template <class coord_t>
-AABB2<coord_t> Tiles<coord_t>::TileBounds(const int32_t col, const int32_t row) const {
-  float basex = tilebounds_.minx() + ((float)col * tilesize_);
-  float basey = tilebounds_.miny() + ((float)row * tilesize_);
-  return AABB2<coord_t>(basex, basey, basex + tilesize_, basey + tilesize_);
-}
-
-// Get the center of the specified tile.
-template <class coord_t> coord_t Tiles<coord_t>::Center(const int32_t tileid) const {
-  auto base = Base(tileid);
-  return coord_t(base.x() + tilesize_ * 0.5, base.y() + tilesize_ * 0.5);
-}
-
-// Get the tile offsets (row,column) between the previous tile Id and
-// a new tileid.  The offsets are returned through arguments (references).
-// Offsets can be positive or negative or 0.
-template <class coord_t>
-void Tiles<coord_t>::TileOffsets(const int32_t initial_tileid,
-                                 const int32_t newtileid,
-                                 int& delta_rows,
-                                 int& delta_cols) const {
-  int32_t deltaTile = newtileid - initial_tileid;
-  delta_rows = (newtileid / ncolumns_) - (initial_tileid / ncolumns_);
-  delta_cols = deltaTile - (delta_rows * ncolumns_);
-}
-
-// Get the number of tiles in the tiling system.
-template <class coord_t> uint32_t Tiles<coord_t>::TileCount() const {
-  float nrows = (tilebounds_.maxy() - tilebounds_.miny()) / tilesize_;
-  return ncolumns_ * static_cast<int32_t>(std::ceil(nrows));
-}
-
-// Get the neighboring tileid to the right/east.
-template <class coord_t> int32_t Tiles<coord_t>::RightNeighbor(const int32_t tileid) const {
-  int32_t row = tileid / ncolumns_;
-  int32_t col = tileid - (row * ncolumns_);
-  if (col < ncolumns_ - 1) {
-    return tileid + 1;
-  } else {
-    return wrapx_ ? tileid - ncolumns_ + 1 : tileid;
-  }
-}
-
-// Get the neighboring tileid to the left/west.
-template <class coord_t> int32_t Tiles<coord_t>::LeftNeighbor(const int32_t tileid) const {
-  int32_t row = tileid / ncolumns_;
-  int32_t col = tileid - (row * ncolumns_);
-  if (col > 0) {
-    return tileid - 1;
-  } else {
-    return wrapx_ ? tileid + ncolumns_ - 1 : tileid;
-  }
+Tiles<coord_t>::Tiles(const coord_t& min_pt,
+                      const float tile_size,
+                      const int32_t columns,
+                      const int32_t rows,
+                      const unsigned short subdivisions,
+                      bool wrapx)
+    : tilebounds_(min_pt,
+                  coord_t{min_pt.first + columns * tile_size, min_pt.second + rows * tile_size}),
+      tilesize_(tile_size), ncolumns_(columns), nrows_(rows),
+      subdivision_size_(tilesize_ / nsubdivisions_), nsubdivisions_(subdivisions), wrapx_(wrapx) {
 }
 
 // Get the list of tiles that lie within the specified bounding box.
@@ -317,7 +210,7 @@ template <class coord_t> std::vector<int> Tiles<coord_t>::TileList(const AABB2<c
   }
 
   std::vector<int32_t> tilelist;
-  for (auto bb : bboxes) {
+  for (const auto& bb : bboxes) {
     int32_t minrow = std::max(Row(bb.miny()), 0);
     int32_t maxrow = std::max(Row(bb.maxy()), 0);
     int32_t mincol = std::max(Col(bb.minx()), 0);
@@ -336,9 +229,18 @@ template <class coord_t> std::vector<int> Tiles<coord_t>::TileList(const AABB2<c
 // Any 2 tiles that have a connected path between them will have the same
 // value in the connectivity map.
 template <class coord_t>
-void Tiles<coord_t>::ColorMap(std::unordered_map<uint32_t, size_t>& connectivity_map) const {
+void Tiles<coord_t>::ColorMap(std::unordered_map<uint32_t, size_t>& connectivity_map,
+                              const std::unordered_map<uint32_t, uint32_t>& not_neighbors) const {
   // Connectivity map - all connected regions will have a unique Id. If any 2
   // tile Ids have a different Id they are judged to be not-connected.
+
+  auto are_feuding = [&not_neighbors](uint32_t a, uint32_t b) {
+    auto found = not_neighbors.find(a);
+    if (found != not_neighbors.cend() && found->second == b)
+      return true;
+    found = not_neighbors.find(b);
+    return found != not_neighbors.cend() && found->second == a;
+  };
 
   // Iterate through tiles
   size_t color = 1;
@@ -351,34 +253,38 @@ void Tiles<coord_t>::ColorMap(std::unordered_map<uint32_t, size_t>& connectivity
     // Mark this tile Id with the current color and find all its
     // accessible neighbors
     tile.second = color;
-    std::list<uint32_t> checklist{tile.first};
+    std::unordered_set<uint32_t> checklist{tile.first};
     while (!checklist.empty()) {
-      uint32_t next_tile = checklist.front();
-      checklist.pop_front();
+      uint32_t next_tile = *checklist.begin();
+      checklist.erase(checklist.begin());
 
       // Check neighbors.
       uint32_t neighbor = LeftNeighbor(next_tile);
       auto neighbor_itr = connectivity_map.find(neighbor);
-      if (neighbor_itr != connectivity_map.cend() && neighbor_itr->second == 0) {
-        checklist.push_back(neighbor);
+      if (neighbor_itr != connectivity_map.cend() && neighbor_itr->second == 0 &&
+          !are_feuding(next_tile, neighbor)) {
+        checklist.emplace(neighbor);
         neighbor_itr->second = color;
       }
       neighbor = RightNeighbor(next_tile);
       neighbor_itr = connectivity_map.find(neighbor);
-      if (neighbor_itr != connectivity_map.cend() && neighbor_itr->second == 0) {
-        checklist.push_back(neighbor);
+      if (neighbor_itr != connectivity_map.cend() && neighbor_itr->second == 0 &&
+          !are_feuding(next_tile, neighbor)) {
+        checklist.emplace(neighbor);
         neighbor_itr->second = color;
       }
       neighbor = TopNeighbor(next_tile);
       neighbor_itr = connectivity_map.find(neighbor);
-      if (neighbor_itr != connectivity_map.cend() && neighbor_itr->second == 0) {
-        checklist.push_back(neighbor);
+      if (neighbor_itr != connectivity_map.cend() && neighbor_itr->second == 0 &&
+          !are_feuding(next_tile, neighbor)) {
+        checklist.emplace(neighbor);
         neighbor_itr->second = color;
       }
       neighbor = BottomNeighbor(next_tile);
       neighbor_itr = connectivity_map.find(neighbor);
-      if (neighbor_itr != connectivity_map.cend() && neighbor_itr->second == 0) {
-        checklist.push_back(neighbor);
+      if (neighbor_itr != connectivity_map.cend() && neighbor_itr->second == 0 &&
+          !are_feuding(next_tile, neighbor)) {
+        checklist.emplace(neighbor);
         neighbor_itr->second = color;
       }
     }

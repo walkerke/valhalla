@@ -3,18 +3,19 @@
 #include "loki/node_search.h"
 #include "loki/search.h"
 #include "midgard/logging.h"
+#include "midgard/sequence.h"
 #include "mjolnir/graphtilebuilder.h"
 #include "thor/astar.h"
 #include "thor/pathalgorithm.h"
 #include <cmath>
 #include <cstdint>
 
+#include "baldr/rapidjson_utils.h"
 #include <boost/algorithm/cxx11/all_of.hpp>
 #include <boost/algorithm/string/classification.hpp>
 #include <boost/filesystem.hpp>
 #include <boost/iterator/reverse_iterator.hpp>
 #include <boost/program_options.hpp>
-#include <boost/property_tree/json_parser.hpp>
 #include <boost/property_tree/ptree.hpp>
 
 #include <algorithm>
@@ -214,8 +215,7 @@ private:
 // merged path. This method should match the predicate used to create OSMLR
 // segments.
 bool allow_edge_pred(const vb::DirectedEdge* edge) {
-  return (!edge->trans_up() && !edge->trans_down() && !edge->is_shortcut() &&
-          edge->classification() != vb::RoadClass::kServiceOther &&
+  return (!edge->is_shortcut() && edge->classification() != vb::RoadClass::kServiceOther &&
           (edge->use() == vb::Use::kRoad || edge->use() == vb::Use::kRamp) && !edge->roundabout() &&
           !edge->internal() && (edge->forwardaccess() & vb::kVehicularAccess) != 0);
 }
@@ -284,13 +284,13 @@ public:
                       const uint32_t tz_index) const;
   bool Allowed(const vb::NodeInfo* node) const;
   vs::Cost EdgeCost(const vb::DirectedEdge* edge, const uint32_t speed) const;
-  const vs::EdgeFilter GetEdgeFilter() const;
-  const vs::NodeFilter GetNodeFilter() const;
+  vs::EdgeFilter GetEdgeFilter() const;
+  vs::NodeFilter GetNodeFilter() const;
   float AStarCostFactor() const;
 };
 
 DistanceOnlyCost::DistanceOnlyCost(vs::TravelMode travel_mode)
-    : DynamicCost(bpt::ptree(), travel_mode) {
+    : DynamicCost(valhalla::Options(), travel_mode) {
 }
 
 DistanceOnlyCost::~DistanceOnlyCost() {
@@ -330,11 +330,11 @@ vs::Cost DistanceOnlyCost::EdgeCost(const vb::DirectedEdge* edge, const uint32_t
   return {edge_len, edge_len};
 }
 
-const vs::EdgeFilter DistanceOnlyCost::GetEdgeFilter() const {
+vs::EdgeFilter DistanceOnlyCost::GetEdgeFilter() const {
   return [](const vb::DirectedEdge* edge) -> float { return allow_edge_pred(edge) ? 1.0f : 0.0f; };
 }
 
-const vs::NodeFilter DistanceOnlyCost::GetNodeFilter() const {
+vs::NodeFilter DistanceOnlyCost::GetNodeFilter() const {
   return [](const vb::NodeInfo*) -> bool { return false; };
 }
 
@@ -434,8 +434,7 @@ std::vector<CandidateEdge> GetEdgesFromNodes(vb::GraphReader& reader,
     const DirectedEdge* directededge = tile->directededge(nodeinfo->edge_index());
     for (uint32_t i = 0; i < nodeinfo->edge_count(); i++, directededge++, ++edgeid) {
       // Skip non-regular edges - must be a road or ramp
-      if (directededge->trans_up() || directededge->trans_down() || directededge->is_shortcut() ||
-          directededge->roundabout() ||
+      if (directededge->is_shortcut() || directededge->roundabout() ||
           (directededge->use() != vb::Use::kRoad && directededge->use() != vb::Use::kRamp) ||
           directededge->internal()) {
         continue;
@@ -444,14 +443,14 @@ std::vector<CandidateEdge> GetEdgesFromNodes(vb::GraphReader& reader,
       // If origin - add outbound edges that have vehicular access
       if (origin && (directededge->forwardaccess() & vb::kVehicularAccess) != 0) {
         vb::PathLocation::PathEdge edge(edgeid, 0.0f, dmy, 1.0f);
-        edges.emplace_back(edge, seg_coord.Distance(nodeinfo->latlng()));
+        edges.emplace_back(edge, seg_coord.Distance(nodeinfo->latlng(tile->header()->base_ll())));
       }
 
       // If destination, add incoming, opposing edge if it has vehicular access
       if (!origin && (directededge->reverseaccess() & vb::kVehicularAccess) != 0) {
         GraphId opp_edge_id = reader.GetOpposingEdgeId(edgeid);
         vb::PathLocation::PathEdge edge(opp_edge_id, 1.0f, dmy, 1.0f);
-        edges.emplace_back(edge, seg_coord.Distance(nodeinfo->latlng()));
+        edges.emplace_back(edge, seg_coord.Distance(nodeinfo->latlng(tile->header()->base_ll())));
       }
     }
   }
@@ -703,13 +702,14 @@ std::vector<EdgeMatch> edge_association::match_edges(const pbf::Segment& segment
     // make sure there's no state left over from previous paths
     m_path_algo->Clear();
     m_path_algo->set_max_label_count(100);
-    auto path = m_path_algo->GetBestPath(origin, dest, m_reader, &m_costing, m_travel_mode);
-    if (path.empty()) {
+    auto paths = m_path_algo->GetBestPath(origin, dest, m_reader, &m_costing, m_travel_mode);
+    if (paths.empty()) {
       // what to do if there's no path?
       LOG_DEBUG("No route to destination " + std::to_string(next_coord) + " from origin point " +
                 std::to_string(coord) + ". Segment cannot be matched, discarding.");
       return std::vector<EdgeMatch>();
     }
+    const auto& path = paths.front();
 
     // Throw out if dist mismatch. The costing method stores distance in both
     // cost and elapsed time - so elapsed time of the last edge is total
@@ -743,7 +743,7 @@ vm::PointLL edge_association::lookup_end_coord(const vb::GraphId& edge_id) {
     node_tile = m_reader.GetGraphTile(node_id);
   }
   auto* node = node_tile->node(node_id);
-  return node->latlng();
+  return node->latlng(tile->header()->base_ll());
 }
 
 vm::PointLL edge_association::lookup_start_coord(const vb::GraphId& edge_id) {
@@ -814,8 +814,10 @@ void edge_association::add_tile(const std::string& file_name) {
   // Read the OSMLR tile
   pbf::Tile tile;
   {
-    std::ifstream in(file_name);
-    if (!tile.ParseFromIstream(&in)) {
+    struct stat s;
+    stat(file_name.c_str(), &s);
+    valhalla::midgard::mem_map<char> buffer(file_name, s.st_size);
+    if (!tile.ParseFromArray(buffer.get(), s.st_size)) {
       throw std::runtime_error("Unable to parse traffic segment file.");
     }
   }
@@ -953,7 +955,7 @@ int main(int argc, char** argv) {
   unsigned int num_threads = 1;
 
   bpo::options_description options(
-      "valhalla_associate_segments " VERSION "\n"
+      "valhalla_associate_segments " VALHALLA_VERSION "\n"
       "\n"
       " Usage: valhalla_associate_segments [options]\n"
       "\n"
@@ -988,7 +990,7 @@ int main(int argc, char** argv) {
   }
 
   if (vm.count("version")) {
-    std::cout << "valhalla_associate_segments " << VERSION << "\n";
+    std::cout << "valhalla_associate_segments " << VALHALLA_VERSION << "\n";
     return EXIT_SUCCESS;
   }
 
@@ -1020,7 +1022,7 @@ int main(int argc, char** argv) {
 
   // parse the config
   bpt::ptree pt;
-  bpt::read_json(config.c_str(), pt);
+  rapidjson::read_json(config, pt);
 
   // fire off some threads to do the work
   LOG_INFO("Associating local traffic segments with " + std::to_string(num_threads) + " threads");

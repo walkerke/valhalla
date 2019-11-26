@@ -1,6 +1,7 @@
 #include "midgard/constants.h"
 #include "midgard/distanceapproximator.h"
 #include "midgard/encoded.h"
+#include "midgard/polyline2.h"
 #include "midgard/util.h"
 #include "test.h"
 #include <cmath>
@@ -17,7 +18,7 @@ void TestRangedDefaultT() {
   constexpr float lower = -50;
   constexpr float upper = 70;
   constexpr unsigned seed = 0;
-  std::default_random_engine generator(seed);
+  std::mt19937 generator(seed);
   std::uniform_real_distribution<float> defaultDistributor(lower, upper);
   std::uniform_real_distribution<float> testDistributor(lower - 40, upper + 40);
 
@@ -233,6 +234,17 @@ void TestResample() {
     }
     if (current + 1 != resampled.cend())
       throw std::runtime_error("Last found point should be last point in resampled polyline");
+
+    // Test resample_polyline
+    Polyline2<PointLL> pl(input_shape);
+    float resolution = 100.0f;
+    auto length = pl.Length();
+    resampled = resample_polyline(input_shape, length, resolution);
+    size_t n = std::round(length / resolution);
+    float sample_distance = length / n;
+    if (resampled.size() != n + 1) {
+      throw std::runtime_error("resample_polyline - Sampled polyline is not the expected length");
+    }
   }
 }
 
@@ -378,6 +390,40 @@ void TestTrimFront() {
   }
 }
 
+void TestLengthWithEmptyVector() {
+  std::vector<PointLL> empty;
+  if (length(empty) != 0.0f) {
+    throw std::logic_error("empty polyline returns non-zero length");
+  }
+  // Test with only 1 point, should still return 0
+  empty.emplace_back(-70.0f, 30.0f);
+  if (length(empty) != 0.0f) {
+    throw std::logic_error("one point polyline returns non-zero length");
+  }
+}
+
+void TestTangentAngle() {
+  PointLL point{-122.839554f, 38.3990479f};
+  std::vector<PointLL> shape{{-122.839104f, 38.3988266f},
+                             {-122.839539f, 38.3988342f},
+                             {-122.839546f, 38.3990479f}};
+  constexpr float kTestDistance = 24.0f; // Use the maximum distance from GetOffsetForHeading
+  float expected = shape[1].Heading(shape[2]);
+  float tang = tangent_angle(1, point, shape, kTestDistance, true);
+  if (std::abs(tang - expected) > 5.0f) {
+    throw std::logic_error("tangent_angle outside expected tolerance: expected " +
+                           std::to_string(expected) + " but tangent = " + std::to_string(tang));
+  }
+
+  PointLL point2{-122.839125f, 38.3988266f};
+  expected = shape[1].Heading(shape[0]);
+  tang = tangent_angle(0, point2, shape, kTestDistance, false);
+  if (std::abs(tang - expected) > 5.0f) {
+    throw std::logic_error("tangent_angle outside expected tolerance: expected " +
+                           std::to_string(expected) + " but tangent = " + std::to_string(tang));
+  }
+}
+
 void TestExpandLocation() {
   // Expand to create a box approx 200x200 meters
   PointLL loc(-77.0f, 39.0f);
@@ -444,6 +490,12 @@ int main() {
 
   // trim_front of a polyline
   suite.test(TEST_CASE(TestTrimFront));
+
+  // Test that length with empty container (or only 1 point) returns 0
+  suite.test(TEST_CASE(TestLengthWithEmptyVector));
+
+  // tangent angle
+  suite.test(TEST_CASE(TestTangentAngle));
 
   // Test similar and equal edge cases
   suite.test(TEST_CASE(TestSimilarAndEqual));
