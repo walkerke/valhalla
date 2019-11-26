@@ -4,8 +4,8 @@
 #include <list>
 #include <string>
 
+#include <valhalla/proto/trip.pb.h>
 #include <valhalla/proto/tripcommon.pb.h>
-#include <valhalla/proto/trippath.pb.h>
 
 namespace valhalla {
 namespace odin {
@@ -13,7 +13,9 @@ namespace odin {
 // TODO maybe rename later
 struct TransitRouteInfo {
 
+#ifdef LOGGING_LEVEL_TRACE
   std::string ToParameterString() const;
+#endif
 
   std::string onestop_id;
   uint32_t block_id;

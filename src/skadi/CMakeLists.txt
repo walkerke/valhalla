@@ -10,9 +10,8 @@ valhalla_module(NAME skadi
     PUBLIC
       ${VALHALLA_SOURCE_DIR}
       ${VALHALLA_SOURCE_DIR}/valhalla
+      $<$<BOOL:${MSVC}>:${VALHALLA_SOURCE_DIR}/third_party/dirent/include>
   DEPENDS
-    valhalla::midgard
-    Boost::filesystem
-    Boost::regex
-    LZ4::LZ4
+    valhalla::baldr
+    Boost::boost
     ZLIB::ZLIB)

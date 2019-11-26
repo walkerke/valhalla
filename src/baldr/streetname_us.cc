@@ -3,8 +3,6 @@
 #include "baldr/streetname.h"
 #include "baldr/streetname_us.h"
 
-#include <boost/algorithm/string/predicate.hpp>
-
 namespace valhalla {
 namespace baldr {
 
@@ -17,7 +15,8 @@ const std::vector<std::string> StreetNameUs::post_dirs_{" North",     " East",  
 const std::vector<std::string> StreetNameUs::post_cardinal_dirs_{" North", " East", " South",
                                                                  " West"};
 
-StreetNameUs::StreetNameUs(const std::string& value) : StreetName(value) {
+StreetNameUs::StreetNameUs(const std::string& value, const bool is_route_number)
+    : StreetName(value, is_route_number) {
 }
 
 std::string StreetNameUs::GetPreDir() const {

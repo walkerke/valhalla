@@ -1,18 +1,14 @@
 ## Protobuf
 protobuf_generate_cpp(protobuff_srcs protobuff_hdrs
+  api.proto
   directions.proto
-  directions_options.proto
-  navigator.proto
+  options.proto
   tripcommon.proto
-  tripdirections.proto
-  trippath.proto
-
-  fileformat.proto
-  osmformat.proto
-  segment.proto
-  tile.proto
+  trip.proto
   transit.proto
-  transit_fetch.proto)
+  transit_fetch.proto
+  ${VALHALLA_SOURCE_DIR}/third_party/OSM-binary/src/fileformat.proto
+  ${VALHALLA_SOURCE_DIR}/third_party/OSM-binary/src/osmformat.proto)
 
 valhalla_module(NAME proto
   SOURCES
@@ -23,4 +19,4 @@ valhalla_module(NAME proto
     PUBLIC
       ${CMAKE_CURRENT_BINARY_DIR}
   DEPENDS
-    protobuf::libprotobuf)
+    ${valhalla_protobuf_targets})

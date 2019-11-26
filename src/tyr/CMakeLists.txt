@@ -19,6 +19,8 @@ valhalla_module(NAME tyr
     PUBLIC
       ${VALHALLA_SOURCE_DIR}
       ${VALHALLA_SOURCE_DIR}/valhalla
+      ${VALHALLA_SOURCE_DIR}/third_party/date/include
+      $<$<BOOL:${MSVC}>:${VALHALLA_SOURCE_DIR}/third_party/dirent/include>
     PRIVATE
       ${VALHALLA_SOURCE_DIR}/third_party/rapidjson/include
       ${CMAKE_BINARY_DIR}
@@ -26,6 +28,6 @@ valhalla_module(NAME tyr
     valhalla::loki
     valhalla::thor
     valhalla::odin
-    valhalla::baldr
-    LZ4::LZ4
-    ZLIB::ZLIB)
+    valhalla::proto
+    ${valhalla_protobuf_targets}
+    Boost::boost)

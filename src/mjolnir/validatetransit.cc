@@ -2,6 +2,7 @@
 #include "mjolnir/dataquality.h"
 #include "mjolnir/graphtilebuilder.h"
 #include "mjolnir/osmrestriction.h"
+#include "mjolnir/servicedays.h"
 
 #include <future>
 #include <queue>
@@ -10,14 +11,15 @@
 #include <boost/algorithm/string.hpp>
 #include <boost/algorithm/string/regex.hpp>
 #include <boost/filesystem/operations.hpp>
+#include <boost/tokenizer.hpp>
 
 #include "baldr/datetime.h"
-#include "baldr/filesystem_utils.h"
 #include "baldr/graphconstants.h"
 #include "baldr/graphid.h"
 #include "baldr/graphreader.h"
 #include "baldr/graphtile.h"
 #include "baldr/tilehierarchy.h"
+#include "filesystem.h"
 #include "midgard/logging.h"
 #include "midgard/sequence.h"
 
@@ -179,7 +181,7 @@ void validate(const boost::property_tree::ptree& pt,
   for (; tile_start != tile_end; ++tile_start) {
     // Get the next tile Id from the queue and get a tile builder
     if (reader_transit_level.OverCommitted()) {
-      reader_transit_level.Clear();
+      reader_transit_level.Trim();
     }
     GraphId tile_id = tile_start->Tile_Base();
 
@@ -300,7 +302,7 @@ std::vector<OneStopTest> ParseTestFile(const std::string& filename) {
   typedef boost::tokenizer<boost::char_separator<char>> tokenizer;
   boost::char_separator<char> sep{","};
   std::vector<OneStopTest> onestoptests;
-  std::string default_date_time = baldr::DateTime::get_testing_date_time();
+  std::string default_date_time = get_testing_date_time();
 
   // Open file
   std::string line;
@@ -476,13 +478,13 @@ bool ValidateTransit::Validate(const boost::property_tree::ptree& pt,
       return false;
     }
     // Also bail if nothing inside
-    transit_dir->push_back(filesystem::path_separator);
+    transit_dir->push_back(filesystem::path::preferred_separator);
     GraphReader reader(hierarchy_properties);
     auto local_level = TileHierarchy::levels().rbegin()->first;
     if (boost::filesystem::is_directory(*transit_dir + std::to_string(local_level + 1) +
-                                        filesystem::path_separator)) {
+                                        filesystem::path::preferred_separator)) {
       boost::filesystem::recursive_directory_iterator transit_file_itr(
-          *transit_dir + std::to_string(local_level + 1) + filesystem::path_separator),
+          *transit_dir + std::to_string(local_level + 1) + filesystem::path::preferred_separator),
           end_file_itr;
       for (; transit_file_itr != end_file_itr; ++transit_file_itr) {
         if (boost::filesystem::is_regular(transit_file_itr->path()) &&

@@ -1,8 +1,6 @@
 #ifndef VALHALLA_MIDGARD_TILEHIERARCHY_H
 #define VALHALLA_MIDGARD_TILEHIERARCHY_H
 
-#include <boost/property_tree/json_parser.hpp>
-#include <boost/property_tree/ptree.hpp>
 #include <cstdint>
 #include <map>
 #include <string>
@@ -16,7 +14,7 @@ namespace valhalla {
 namespace baldr {
 
 /**
- * TileLevel: Define a level in the hierarchy of the tiles. Includes:
+ * TileLevel: Defines a level in the hierarchy of the tiles. Includes:
  *          Hierarchy level.
  *          Minimum (largest value) road class in this level.
  *          Name for the level.
@@ -56,6 +54,13 @@ public:
   static GraphId GetGraphId(const midgard::PointLL& pointll, const uint8_t level);
 
   /**
+   * Returns bounding box for the given GraphId .
+   * @param id corresponding GraphId.
+   * @return Bounding box of the tile which corresponding GraphId stands for.
+   */
+  static midgard::AABB2<midgard::PointLL> GetGraphIdBoundingBox(const GraphId& id);
+
+  /**
    * Returns all the GraphIds of the tiles which intersect the given bounding
    * box at that level.
    * @param bbox  Bounding box of tiles to find.
@@ -83,6 +88,13 @@ public:
    * @return  Returns the max. level.
    */
   static uint8_t get_max_level();
+
+  /**
+   * Get the tiling system for a specified level.
+   * @param level  Level Id.
+   * @return Returns a const reference to the tiling system for this level.
+   */
+  static const midgard::Tiles<midgard::PointLL>& get_tiling(const uint8_t level);
 };
 
 } // namespace baldr

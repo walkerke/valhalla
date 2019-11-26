@@ -1,8 +1,31 @@
-version: 2
+version: 2.1
+
+executors:
+  macos:
+    macos:
+      xcode: 11.1.0
+    environment:
+      HOMEBREW_NO_AUTO_UPDATE: 1
+
+commands:
+  install_macos_dependencies:
+    steps:
+      - run: brew install protobuf cmake libtool boost-python libspatialite pkg-config lua curl wget czmq lz4 spatialite-tools unzip
+      - run:
+          name: Install Node
+          command: |
+            set +e
+            touch $BASH_ENV
+            curl -o- https://raw.githubusercontent.com/creationix/nvm/v0.33.5/install.sh | bash
+            echo 'export NVM_DIR="$HOME/.nvm"' >> $BASH_ENV
+            echo '[ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"' >> $BASH_ENV
+            echo 'nvm install v8.11.2' >> $BASH_ENV
+            echo 'nvm alias default v8.11.2' >> $BASH_ENV
+
 jobs:
   lint:
     docker:
-      - image: valhalla/docker:build-2.6.1
+      - image: valhalla/docker:build-3.0.1
     steps:
       - checkout
       - run: apt-get update && apt-get -y install clang-tidy-5.0 clang-5.0 curl git nodejs
@@ -16,11 +39,15 @@ jobs:
       - run: mkdir build
       - run: cd build && cmake .. -DCMAKE_BUILD_TYPE=Release -DCMAKE_EXPORT_COMPILE_COMMANDS=On
       - run: make -C build -j4
-      - run: run-clang-tidy-5.0.py -p build -header-filter "^$(pwd)/(src|valhalla/(baldr|midgard|sif|odin|thor|skadi|tyr|loki|mjolnir|bindings)/.*" && ./scripts/error_on_dirty.sh
+      - run: cd build && ../scripts/tidy.sh && ../scripts/error_on_dirty.sh
+      - save_cache:
+          key: ccache
+          paths:
+            - ~/.ccache
 
-  linux-publish-release:
+  build-release-binary-linux:
     docker:
-      - image: valhalla/docker:build-2.6.1
+      - image: valhalla/docker:build-3.0.1
     steps:
       - checkout
       - run:
@@ -32,6 +59,7 @@ jobs:
             echo '[ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"' >> $BASH_ENV
             echo 'nvm install v8.11.2' >> $BASH_ENV
             echo 'nvm alias default v8.11.2' >> $BASH_ENV
+      - run: ./scripts/format.sh && ./scripts/error_on_dirty.sh
       - run: git submodule sync && git submodule update --init
       - restore_cache:
           keys:
@@ -47,7 +75,9 @@ jobs:
       - run:
           command: |
             export PACKAGE_JSON_VERSION=$(node -e "console.log(require('./package.json').version)")
-            export PUBLISH=$([[ "${CIRCLE_TAG:-}" == "v${PACKAGE_JSON_VERSION}" ]] && echo "On" || echo "Off")
+            export PUBLISH=$([[ "${CIRCLE_TAG:-}" == "${PACKAGE_JSON_VERSION}" ]] && echo "On" || echo "Off")
+            echo circle_tag ${CIRCLE_TAG:-}
+            echo package_json_version ${PACKAGE_JSON_VERSION}
             export COMMIT_MESSAGE=$(git log --oneline --format=%B -n 1 ${CIRCLE_SHA1} | head -n 1)
             export BUILD_TYPE=Release
             ./scripts/publish.sh
@@ -56,9 +86,9 @@ jobs:
           paths:
             - ~/.ccache
 
-  linux-publish-debug:
+  build-debug-binary-linux:
     docker:
-      - image: valhalla/docker:build-2.6.1
+      - image: valhalla/docker:build-3.0.1
     steps:
       - checkout
       - run:
@@ -70,6 +100,7 @@ jobs:
             echo '[ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"' >> $BASH_ENV
             echo 'nvm install v8.11.2' >> $BASH_ENV
             echo 'nvm alias default v8.11.2' >> $BASH_ENV
+      - run: ./scripts/format.sh && ./scripts/error_on_dirty.sh
       - run: git submodule sync && git submodule update --init
       - restore_cache:
           keys:
@@ -85,7 +116,7 @@ jobs:
       - run:
           command: |
             export PACKAGE_JSON_VERSION=$(node -e "console.log(require('./package.json').version)")
-            export PUBLISH=$([[ "${CIRCLE_TAG:-}" == "v${PACKAGE_JSON_VERSION}" ]] && echo "On" || echo "Off")
+            export PUBLISH=$([[ "${CIRCLE_TAG:-}" == "${PACKAGE_JSON_VERSION}" ]] && echo "On" || echo "Off")
             export COMMIT_MESSAGE=$(git log --oneline --format=%B -n 1 ${CIRCLE_SHA1} | head -n 1)
             export BUILD_TYPE=Debug
             ./scripts/publish.sh
@@ -96,18 +127,19 @@ jobs:
 
   build-debug:
     docker:
-      - image: valhalla/docker:build-2.6.1
+      - image: valhalla/docker:build-3.0.1
     steps:
       - checkout
+      - run: ./scripts/format.sh && ./scripts/error_on_dirty.sh
       - run: git submodule sync && git submodule update --init
       - restore_cache:
           keys:
             - ccache
       - run: npm install --ignore-scripts
       - run: mkdir build
-      - run: cd build && cmake .. -DCMAKE_BUILD_TYPE=Debug -DENABLE_COVERAGE=On -DCPACK_GENERATOR=DEB
+      - run: cd build && cmake .. -DCMAKE_BUILD_TYPE=Debug -DENABLE_COVERAGE=On -DCPACK_GENERATOR=DEB -DENABLE_COMPILER_WARNINGS=On
       - run: make -C build -j4
-      - run: make -C build -j2 tests
+      - run: make -C build -j4 tests
       - run: make -C build -j2 check
       - run: make -C build install
       - run: make -C build package
@@ -120,9 +152,10 @@ jobs:
 
   build-release:
     docker:
-      - image: valhalla/docker:build-2.6.1
+      - image: valhalla/docker:build-3.0.1
     steps:
       - checkout
+      - run: ./scripts/format.sh && ./scripts/error_on_dirty.sh
       - run: git submodule sync && git submodule update --init
       - restore_cache:
           keys:
@@ -133,7 +166,7 @@ jobs:
           cd build && cmake .. -DCMAKE_BUILD_TYPE=Release -DBUILD_SHARED_LIBS=On -DENABLE_PYTHON_BINDINGS=On \
           -DCPACK_GENERATOR=DEB -DCPACK_PACKAGE_VERSION_SUFFIX="-0ubuntu1-$(lsb_release -sc)"
       - run: make -C build -j4
-      - run: make -C build -j2 tests
+      - run: make -C build -j4 tests
       - run: make -C build -j2 check
       - run: make -C build install
       - run: make -C build package
@@ -142,25 +175,34 @@ jobs:
           paths:
             - ~/.ccache
 
-  build-osx:
-    macos:
-      xcode: "9.2.0"
-    environment:
-      HOMEBREW_NO_AUTO_UPDATE: 1
+  build-release-x86:
+    docker:
+      - image: valhalla/docker:build-x86-3.0.1
     steps:
-      - run: brew install protobuf --without-python@2
-      - run: brew upgrade python
-      - run: brew install cmake libtool boost-python libspatialite pkg-config lua jq curl wget czmq lz4 nvm
-      - run:
-          command: |
-            set +e
-            touch $BASH_ENV
-            curl -o- https://raw.githubusercontent.com/creationix/nvm/v0.33.5/install.sh | bash
-            echo 'export NVM_DIR="$HOME/.nvm"' >> $BASH_ENV
-            echo '[ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"' >> $BASH_ENV
-            echo 'nvm install v8.11.2' >> $BASH_ENV
-            echo 'nvm alias default v8.11.2' >> $BASH_ENV
       - checkout
+      #- run: ./scripts/format.sh && ./scripts/error_on_dirty.sh
+      - run: git submodule sync && git submodule update --init
+      - restore_cache:
+          keys:
+            - ccache
+      - run: npm install --ignore-scripts
+      - run: mkdir build
+      - run: |
+          cd build && cmake .. -DCMAKE_BUILD_TYPE=Release -DENABLE_NODE_BINDINGS=Off
+      - run: make -C build -j4
+      - run: make -C build -j4 tests
+      - run: make -C build -j2 check
+      - save_cache:
+          key: ccache
+          paths:
+            - ~/.ccache
+
+  build-osx:
+    executor: macos
+    steps:
+      - install_macos_dependencies
+      - checkout
+      - run: ./scripts/format.sh && ./scripts/error_on_dirty.sh
       - run: git submodule sync && git submodule update --init
       # - restore_cache:
       #     keys:
@@ -171,28 +213,81 @@ jobs:
       - run: mkdir -p build
       - run: cd build && cmake .. -DENABLE_PYTHON_BINDINGS=Off
       - run: make -C build -j4
-      - run: make -C build -j2 tests
+      - run: make -C build -j4 tests
       - run: make -C build -j2 check
-      - run: make -C build install
-      - run:
-          command: |
-            export PACKAGE_JSON_VERSION=$(node -e "console.log(require('./package.json').version)")
-            export PUBLISH=$([[ "${CIRCLE_TAG:-}" == "v${PACKAGE_JSON_VERSION}" ]] && echo "On" || echo "Off")
-            export COMMIT_MESSAGE=$(git log --oneline --format=%B -n 1 ${CIRCLE_SHA1} | head -n 1)
-            export BUILD_TYPE=Release
-            ./scripts/publish.sh
       - save_cache:
           key: ccache
           paths:
             - ~/.ccache
 
+  build-release-binary-osx:
+    executor: macos
+    steps:
+      - install_macos_dependencies
+      - checkout
+      - run: ./scripts/format.sh && ./scripts/error_on_dirty.sh
+      - run: git submodule sync && git submodule update --init
+      - run: npm install --ignore-scripts
+      - run: mkdir -p build
+      - run: cd build && cmake .. -DBUILD_SHARED_LIBS=Off -DENABLE_PYTHON_BINDINGS=Off -DENABLE_DATA_TOOLS=OFF -DENABLE_SERVICES=OFF -DBoost_USE_STATIC_LIBS=ON -DProtobuf_USE_STATIC_LIBS=ON -DLZ4_USE_STATIC_LIBS=ON
+      - run: make -C build -j4
+      - run:
+          command: |
+            export PACKAGE_JSON_VERSION=$(node -e "console.log(require('./package.json').version)")
+            export PUBLISH=$([[ "${CIRCLE_TAG:-}" == "${PACKAGE_JSON_VERSION}" ]] && echo "On" || echo "Off")
+            export COMMIT_MESSAGE=$(git log --oneline --format=%B -n 1 ${CIRCLE_SHA1} | head -n 1)
+            export BUILD_TYPE=Release
+            ./scripts/publish.sh
+
+  build-debug-binary-osx:
+    executor: macos
+    steps:
+      - install_macos_dependencies
+      - checkout
+      - run: ./scripts/format.sh && ./scripts/error_on_dirty.sh
+      - run: git submodule sync && git submodule update --init
+      - run: npm install --ignore-scripts
+      - run: mkdir -p build
+      - run: cd build && cmake .. -DCMAKE_BUILD_TYPE=Debug -DENABLE_PYTHON_BINDINGS=Off -DBUILD_SHARED_LIBS=Off -DENABLE_DATA_TOOLS=OFF -DENABLE_SERVICES=OFF -DBoost_USE_STATIC_LIBS=ON -DProtobuf_USE_STATIC_LIBS=ON -DLZ4_USE_STATIC_LIBS=ON
+      - run: make -C build -j4
+      - run:
+          command: |
+            export PACKAGE_JSON_VERSION=$(node -e "console.log(require('./package.json').version)")
+            export PUBLISH=$([[ "${CIRCLE_TAG:-}" == "${PACKAGE_JSON_VERSION}" ]] && echo "On" || echo "Off")
+            export COMMIT_MESSAGE=$(git log --oneline --format=%B -n 1 ${CIRCLE_SHA1} | head -n 1)
+            export BUILD_TYPE=Debug
+            ./scripts/publish.sh
+
 workflows:
   version: 2
-  build_and_test:
+  build_test_publish:
     jobs:
       - lint
       - build-debug
       - build-release
+      - build-release-x86
       - build-osx
-      - linux-publish-release
-      - linux-publish-debug
+      - build-release-binary-osx:
+          filters:
+            tags:
+              only: /.*/
+            branches:
+              ignore: /.*/
+      - build-debug-binary-osx:
+          filters:
+            tags:
+              only: /.*/
+            branches:
+              ignore: /.*/
+      - build-release-binary-linux:
+          filters:
+            tags:
+              only: /.*/
+            branches:
+              ignore: /.*/
+      - build-debug-binary-linux:
+          filters:
+            tags:
+              only: /.*/
+            branches:
+              ignore: /.*/
